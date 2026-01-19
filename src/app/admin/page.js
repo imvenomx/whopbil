@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const initialForm = {
   username: "",
@@ -11,44 +12,47 @@ export default function AdminPage() {
   const [form, setForm] = useState(initialForm);
   const [isAuthed, setIsAuthed] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const [config, setConfig] = useState({
-    iframeUrl: "",
-    price: "",
-  });
+  const [activeAccount, setActiveAccount] = useState(null);
+  const [accountsCount, setAccountsCount] = useState(0);
 
-  async function loadConfig() {
+  async function checkAuth() {
     setLoading(true);
     setError("");
 
     try {
-      const res = await fetch("/api/admin/config", { cache: "no-store" });
+      const res = await fetch(`/api/admin/config?t=${Date.now()}`, { cache: "no-store" });
       if (res.status === 401) {
         setIsAuthed(false);
         return;
       }
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`HTTP ${res.status}${text ? `: ${text}` : ""}`);
+        throw new Error("Failed to check auth");
       }
-
-      const data = await res.json();
-      setConfig({
-        iframeUrl: data?.iframeUrl || "",
-        price: data?.price || "",
-      });
       setIsAuthed(true);
+
+      // Load controller info
+      const controllerRes = await fetch(`/api/admin/controller?t=${Date.now()}`, { cache: "no-store" });
+      if (controllerRes.ok) {
+        const data = await controllerRes.json();
+        setAccountsCount(data.accounts?.length || 0);
+        if (data.activeAccountId) {
+          const active = data.accounts?.find((a) => a.id === data.activeAccountId);
+          setActiveAccount(active || null);
+        } else {
+          setActiveAccount(null);
+        }
+      }
     } catch (e) {
-      setError(`Could not load admin config. ${e?.message ? `(${e.message})` : ""}`);
+      setError(`Could not connect. ${e?.message ? `(${e.message})` : ""}`);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadConfig();
+    checkAuth();
   }, []);
 
   async function login(e) {
@@ -71,7 +75,7 @@ export default function AdminPage() {
       }
 
       setForm(initialForm);
-      await loadConfig();
+      await checkAuth();
     } catch (e) {
       setError("Login failed.");
     }
@@ -86,60 +90,9 @@ export default function AdminPage() {
     }
   }
 
-  async function save(e) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-
-    const numericPrice = String(config.price || "")
-      .replace(/[^0-9.,]/g, "")
-      .trim();
-
-    try {
-      const res = await fetch("/api/admin/config", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          iframeUrl: config.iframeUrl,
-          price: numericPrice,
-        }),
-      });
-
-      if (res.status === 401) {
-        setIsAuthed(false);
-        setError("Session expired. Please log in again.");
-        return;
-      }
-
-      if (!res.ok) {
-        setError("Save failed.");
-        return;
-      }
-
-      const data = await res.json();
-      setConfig({
-        iframeUrl: data?.iframeUrl || "",
-        price: data?.price || "",
-      });
-
-      if (typeof window !== "undefined" && window.Swal) {
-        await window.Swal.fire({
-          icon: "success",
-          title: "Changes saved successfully",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-      }
-    } catch (e) {
-      setError("Save failed.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
-    <main style={{ padding: 24, maxWidth: 720, margin: "0 auto" }}>
-      <h1 style={{ margin: "0 0 12px 0" }}>Admin</h1>
+    <main style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
+      <h1 style={{ margin: "0 0 12px 0" }}>Admin Dashboard</h1>
 
       {error ? (
         <div
@@ -157,10 +110,10 @@ export default function AdminPage() {
       ) : null}
 
       {loading ? (
-        <div>Loading…</div>
+        <div>Loading...</div>
       ) : isAuthed ? (
         <>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
             <button
               onClick={logout}
               className="btn btn-secondary"
@@ -171,46 +124,103 @@ export default function AdminPage() {
             </button>
           </div>
 
-          <form onSubmit={save} style={{ display: "grid", gap: 12 }}>
-            <div>
-              <label htmlFor="iframeUrl">SumUp iframe URL</label>
-              <input
-                id="iframeUrl"
-                className="field"
-                type="url"
-                value={config.iframeUrl}
-                onChange={(e) => setConfig((c) => ({ ...c, iframeUrl: e.target.value }))}
-                placeholder="https://pay.sumup.com/b2c/..."
-              />
+          {/* Status Card */}
+          <div
+            style={{
+              background: activeAccount ? "#f0fdf4" : "#fef9c3",
+              border: `1px solid ${activeAccount ? "#86efac" : "#fde047"}`,
+              borderRadius: 12,
+              padding: 16,
+              marginBottom: 24,
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>
+              {activeAccount
+                ? `Active Account: ${activeAccount.name}`
+                : "No SumUp account selected"}
             </div>
+            <div style={{ fontSize: 13, color: "#6d7175" }}>
+              {activeAccount
+                ? "All checkout pages are using this account."
+                : "Select an account in the Controller to enable checkout payments."}
+            </div>
+          </div>
 
-            <div>
-              <label htmlFor="price">Price (number only)</label>
-              <input
-                id="price"
-                className="field"
-                type="text"
-                value={config.price}
-                onChange={(e) =>
-                  setConfig((c) => ({
-                    ...c,
-                    price: e.target.value.replace(/[^0-9.,]/g, ""),
-                  }))
-                }
-                placeholder="84,00"
-              />
-            </div>
+          {/* Navigation Cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
+            <Link href="/admin/controller" style={{ textDecoration: "none", color: "inherit" }}>
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid #e1e3e5",
+                  borderRadius: 12,
+                  padding: 20,
+                  cursor: "pointer",
+                  transition: "box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+              >
+                <div style={{ fontSize: 24, marginBottom: 8 }}>
+                  <span role="img" aria-label="controller">&#9881;</span>
+                </div>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Controller</div>
+                <div style={{ fontSize: 13, color: "#6d7175" }}>
+                  Switch active SumUp account for all checkout pages
+                </div>
+              </div>
+            </Link>
 
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button className="btn btn-primary" type="submit" disabled={saving}>
-                {saving ? "Saving…" : "Save"}
-              </button>
-            </div>
+            <Link href="/admin/accounts" style={{ textDecoration: "none", color: "inherit" }}>
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid #e1e3e5",
+                  borderRadius: 12,
+                  padding: 20,
+                  cursor: "pointer",
+                  transition: "box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+              >
+                <div style={{ fontSize: 24, marginBottom: 8 }}>
+                  <span role="img" aria-label="accounts">&#128179;</span>
+                </div>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>SumUp Accounts</div>
+                <div style={{ fontSize: 13, color: "#6d7175" }}>
+                  {accountsCount} account{accountsCount !== 1 ? "s" : ""} configured
+                </div>
+              </div>
+            </Link>
 
-            <div style={{ color: "#6d7175", fontSize: 13 }}>
-              Changes are saved server-side to <code>checkout-config.json</code>.
-            </div>
-          </form>
+            <Link href="/admin/checkout-pages" style={{ textDecoration: "none", color: "inherit" }}>
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid #e1e3e5",
+                  borderRadius: 12,
+                  padding: 20,
+                  cursor: "pointer",
+                  transition: "box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+              >
+                <div style={{ fontSize: 24, marginBottom: 8 }}>
+                  <span role="img" aria-label="pages">&#128196;</span>
+                </div>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Checkout Pages</div>
+                <div style={{ fontSize: 13, color: "#6d7175" }}>
+                  Manage checkout page configurations
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          <div style={{ marginTop: 24, color: "#6d7175", fontSize: 13 }}>
+            Configuration is stored in Vercel KV.
+          </div>
         </>
       ) : (
         <form
@@ -222,6 +232,7 @@ export default function AdminPage() {
             border: "1px solid #e1e3e5",
             borderRadius: 12,
             padding: 16,
+            maxWidth: 400,
           }}
         >
           <div>
