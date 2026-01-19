@@ -137,6 +137,41 @@ export default function CheckoutPagesPage() {
     setForm({ name: "", slug: "", price: "", productName: "", productImage: "" });
   }
 
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (typeof window !== "undefined" && window.Swal) {
+        window.Swal.fire({
+          icon: "success",
+          title: "Copied!",
+          text: "Link copied to clipboard",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    }).catch(() => {
+      // Fallback
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      if (typeof window !== "undefined" && window.Swal) {
+        window.Swal.fire({
+          icon: "success",
+          title: "Copied!",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    });
+  }
+
+  function getCheckoutUrl(page) {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    return `${baseUrl}/checkout/${page.slug || page.id}`;
+  }
+
   if (loading) {
     return (
       <main style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
@@ -289,14 +324,53 @@ export default function CheckoutPagesPage() {
               }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>{page.name}</div>
-                  <div style={{ fontSize: 13, color: "#6d7175", marginBottom: 8 }}>
-                    /{page.slug} {page.price && `- ${page.price} EUR`}
+                  <div style={{ fontSize: 13, color: "#6d7175", marginBottom: 4 }}>
+                    {page.price && `${page.price} EUR`} {page.productName && `- ${page.productName}`}
                   </div>
-                  {page.productName && (
-                    <div style={{ fontSize: 13, color: "#6d7175" }}>
-                      Product: {page.productName}
-                    </div>
-                  )}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      background: "#f0f7ff",
+                      padding: "8px 12px",
+                      borderRadius: 6,
+                      marginTop: 8,
+                    }}
+                  >
+                    <code style={{
+                      flex: 1,
+                      fontSize: 12,
+                      color: "#1773b0",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {getCheckoutUrl(page)}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(getCheckoutUrl(page))}
+                      style={{
+                        background: "#1773b0",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 8px",
+                        fontSize: 12,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                      Copy
+                    </button>
+                  </div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
