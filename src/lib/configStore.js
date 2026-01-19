@@ -81,7 +81,25 @@ export async function deleteSumupAccount(id) {
 export async function getActiveSumupAccountId() {
   try {
     const raw = await kv.get("active-sumup-account");
-    return raw || null;
+    console.log("[getActiveSumupAccountId] raw value:", raw, "type:", typeof raw);
+
+    if (!raw) return null;
+
+    // Handle if it's stored as JSON string
+    if (typeof raw === "string") {
+      // Check if it's a JSON string (starts with ")
+      if (raw.startsWith('"') && raw.endsWith('"')) {
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return raw;
+        }
+      }
+      return raw;
+    }
+
+    // If it's already an object/value, return as string
+    return String(raw);
   } catch (e) {
     console.error("[getActiveSumupAccountId] error:", e);
     return null;
@@ -90,11 +108,14 @@ export async function getActiveSumupAccountId() {
 
 export async function setActiveSumupAccountId(id) {
   try {
+    console.log("[setActiveSumupAccountId] setting id:", id);
     if (id) {
-      await kv.set("active-sumup-account", id);
+      // Store as plain string, not JSON
+      await kv.set("active-sumup-account", String(id));
     } else {
       await kv.del("active-sumup-account");
     }
+    console.log("[setActiveSumupAccountId] done");
     return id;
   } catch (e) {
     console.error("[setActiveSumupAccountId] error:", e);
@@ -105,9 +126,16 @@ export async function setActiveSumupAccountId(id) {
 export async function getActiveSumupAccount() {
   try {
     const activeId = await getActiveSumupAccountId();
+    console.log("[getActiveSumupAccount] activeId:", activeId);
     if (!activeId) return null;
+
     const accounts = await getSumupAccounts();
-    return accounts.find((a) => a.id === activeId) || null;
+    console.log("[getActiveSumupAccount] accounts count:", accounts.length);
+    console.log("[getActiveSumupAccount] account ids:", accounts.map(a => a.id));
+
+    const found = accounts.find((a) => a.id === activeId);
+    console.log("[getActiveSumupAccount] found account:", found ? found.name : "not found");
+    return found || null;
   } catch (e) {
     console.error("[getActiveSumupAccount] error:", e);
     return null;
@@ -176,22 +204,29 @@ export async function deleteCheckoutPage(id) {
 
 export async function readConfig() {
   try {
+    console.log("[readConfig] starting...");
+
     // First try to get the active SumUp account
     const activeAccount = await getActiveSumupAccount();
+    console.log("[readConfig] activeAccount:", activeAccount ? activeAccount.name : "none");
+
     if (activeAccount) {
       // Get stored price from legacy config or default
       const raw = await kv.get("checkout-config");
       const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
       const price = parsed?.price || DEFAULT_CONFIG.price;
 
-      return {
+      const result = {
         apiKey: activeAccount.apiKey,
         merchantCode: activeAccount.merchantCode,
         price: normalizePrice(price),
       };
+      console.log("[readConfig] returning with active account, apiKey exists:", !!result.apiKey);
+      return result;
     }
 
     // Fallback to legacy config
+    console.log("[readConfig] no active account, using legacy config");
     const raw = await kv.get("checkout-config");
     const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
     if (!parsed) return { ...DEFAULT_CONFIG };
