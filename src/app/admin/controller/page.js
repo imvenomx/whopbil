@@ -193,9 +193,14 @@ export default function ControllerPage() {
             <div style={{ fontWeight: 600, marginBottom: 8, color: "#166534" }}>
               Currently Active: {activeAccount.name}
             </div>
-            <div style={{ fontSize: 13, color: "#6d7175", wordBreak: "break-all" }}>
-              {activeAccount.iframeUrl}
+            <div style={{ fontSize: 13, color: "#6d7175" }}>
+              API Key: {activeAccount.apiKey ? `${activeAccount.apiKey.substring(0, 4)}...${activeAccount.apiKey.substring(activeAccount.apiKey.length - 4)}` : "Not set"}
             </div>
+            {activeAccount.merchantCode && (
+              <div style={{ fontSize: 13, color: "#6d7175", marginTop: 4 }}>
+                Merchant Code: {activeAccount.merchantCode}
+              </div>
+            )}
           </div>
         )}
 

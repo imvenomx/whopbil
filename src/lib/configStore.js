@@ -6,7 +6,8 @@ const kv = new VercelKV({
 });
 
 const DEFAULT_CONFIG = {
-  iframeUrl: "https://pay.sumup.com/b2c/QOWZ174A",
+  apiKey: "",
+  merchantCode: "",
   price: "84,00",
 };
 
@@ -44,7 +45,8 @@ export async function addSumupAccount(account) {
   const newAccount = {
     id: Date.now().toString(),
     name: account.name || "Unnamed Account",
-    iframeUrl: account.iframeUrl || "",
+    apiKey: account.apiKey || "",
+    merchantCode: account.merchantCode || "",
     createdAt: new Date().toISOString(),
   };
   accounts.push(newAccount);
@@ -183,7 +185,8 @@ export async function readConfig() {
       const price = parsed?.price || DEFAULT_CONFIG.price;
 
       return {
-        iframeUrl: activeAccount.iframeUrl,
+        apiKey: activeAccount.apiKey,
+        merchantCode: activeAccount.merchantCode,
         price: normalizePrice(price),
       };
     }
@@ -197,8 +200,8 @@ export async function readConfig() {
       ...parsed,
     };
     return {
-      iframeUrl:
-        typeof merged.iframeUrl === "string" ? merged.iframeUrl.trim() : DEFAULT_CONFIG.iframeUrl,
+      apiKey: typeof merged.apiKey === "string" ? merged.apiKey.trim() : DEFAULT_CONFIG.apiKey,
+      merchantCode: typeof merged.merchantCode === "string" ? merged.merchantCode.trim() : DEFAULT_CONFIG.merchantCode,
       price: normalizePrice(merged.price),
     };
   } catch (e) {
@@ -214,8 +217,8 @@ export async function writeConfig(nextConfig) {
   };
 
   const normalized = {
-    iframeUrl:
-      typeof merged.iframeUrl === "string" ? merged.iframeUrl.trim() : DEFAULT_CONFIG.iframeUrl,
+    apiKey: typeof merged.apiKey === "string" ? merged.apiKey.trim() : DEFAULT_CONFIG.apiKey,
+    merchantCode: typeof merged.merchantCode === "string" ? merged.merchantCode.trim() : DEFAULT_CONFIG.merchantCode,
     price: normalizePrice(merged.price),
   };
 

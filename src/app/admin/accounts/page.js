@@ -11,7 +11,7 @@ export default function AccountsPage() {
   const [isAuthed, setIsAuthed] = useState(false);
 
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: "", iframeUrl: "" });
+  const [form, setForm] = useState({ name: "", apiKey: "", merchantCode: "" });
 
   async function loadAccounts() {
     setLoading(true);
@@ -39,8 +39,8 @@ export default function AccountsPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.name || !form.iframeUrl) {
-      setError("Name and iframe URL are required");
+    if (!form.name || !form.apiKey) {
+      setError("Name and API key are required");
       return;
     }
 
@@ -50,8 +50,8 @@ export default function AccountsPage() {
     try {
       const method = editingId ? "PUT" : "POST";
       const body = editingId
-        ? { id: editingId, name: form.name, iframeUrl: form.iframeUrl }
-        : { name: form.name, iframeUrl: form.iframeUrl };
+        ? { id: editingId, name: form.name, apiKey: form.apiKey, merchantCode: form.merchantCode }
+        : { name: form.name, apiKey: form.apiKey, merchantCode: form.merchantCode };
 
       const res = await fetch("/api/admin/accounts", {
         method,
@@ -69,7 +69,7 @@ export default function AccountsPage() {
         throw new Error(data.error || "Failed to save account");
       }
 
-      setForm({ name: "", iframeUrl: "" });
+      setForm({ name: "", apiKey: "", merchantCode: "" });
       setEditingId(null);
       await loadAccounts();
 
@@ -117,12 +117,17 @@ export default function AccountsPage() {
 
   function startEdit(account) {
     setEditingId(account.id);
-    setForm({ name: account.name, iframeUrl: account.iframeUrl });
+    setForm({ name: account.name, apiKey: account.apiKey || "", merchantCode: account.merchantCode || "" });
   }
 
   function cancelEdit() {
     setEditingId(null);
-    setForm({ name: "", iframeUrl: "" });
+    setForm({ name: "", apiKey: "", merchantCode: "" });
+  }
+
+  function maskApiKey(key) {
+    if (!key || key.length < 8) return key;
+    return key.substring(0, 4) + "..." + key.substring(key.length - 4);
   }
 
   if (loading) {
@@ -185,14 +190,28 @@ export default function AccountsPage() {
             />
           </div>
           <div>
-            <label htmlFor="iframeUrl">SumUp iframe URL</label>
+            <label htmlFor="apiKey">SumUp API Key</label>
             <input
-              id="iframeUrl"
+              id="apiKey"
               className="field"
-              type="url"
-              value={form.iframeUrl}
-              onChange={(e) => setForm((f) => ({ ...f, iframeUrl: e.target.value }))}
-              placeholder="https://pay.sumup.com/b2c/..."
+              type="password"
+              value={form.apiKey}
+              onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
+              placeholder="Enter your SumUp API key"
+            />
+            <div style={{ fontSize: 12, color: "#6d7175", marginTop: 4 }}>
+              Get your API key from SumUp Developer Portal
+            </div>
+          </div>
+          <div>
+            <label htmlFor="merchantCode">Merchant Code (optional)</label>
+            <input
+              id="merchantCode"
+              className="field"
+              type="text"
+              value={form.merchantCode}
+              onChange={(e) => setForm((f) => ({ ...f, merchantCode: e.target.value }))}
+              placeholder="e.g., MXXXXXXXXX"
             />
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -232,15 +251,14 @@ export default function AccountsPage() {
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>{account.name}</div>
-                <div style={{
-                  fontSize: 13,
-                  color: "#6d7175",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}>
-                  {account.iframeUrl}
+                <div style={{ fontSize: 13, color: "#6d7175", marginBottom: 2 }}>
+                  API Key: {maskApiKey(account.apiKey)}
                 </div>
+                {account.merchantCode && (
+                  <div style={{ fontSize: 13, color: "#6d7175" }}>
+                    Merchant: {account.merchantCode}
+                  </div>
+                )}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button

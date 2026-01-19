@@ -231,9 +231,12 @@ async function detectLangByIP() {
 
 export default function Home() {
   const [config, setConfig] = useState({
-    iframeUrl: "https://pay.sumup.com/b2c/QOWZ174A",
     price: "84,00",
   });
+  const [checkoutId, setCheckoutId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [cardMounted, setCardMounted] = useState(false);
 
   const displayPrice = `${config.price} €`;
 
@@ -252,27 +255,48 @@ export default function Home() {
     };
   }, []);
 
+  // Load config and create checkout
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       try {
-        const res = await fetch("/api/config", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        setConfig({
-          iframeUrl:
-            typeof data?.iframeUrl === "string" && data.iframeUrl.trim()
-              ? data.iframeUrl.trim()
-              : "https://pay.sumup.com/b2c/QOWZ174A",
-          price:
-            typeof data?.price === "string" && data.price.trim()
-              ? data.price.trim()
-              : "84,00",
+        setLoading(true);
+        setError(null);
+
+        // First fetch config to get the price
+        const configRes = await fetch("/api/config", { cache: "no-store" });
+        if (configRes.ok) {
+          const configData = await configRes.json();
+          if (cancelled) return;
+          setConfig({
+            price: configData?.price || "84,00",
+          });
+        }
+
+        // Create checkout
+        const checkoutRes = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
         });
+
+        if (!checkoutRes.ok) {
+          const errData = await checkoutRes.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to create checkout");
+        }
+
+        const checkoutData = await checkoutRes.json();
+        if (cancelled) return;
+        setCheckoutId(checkoutData.checkoutId);
       } catch (e) {
-        // ignore
+        if (!cancelled) {
+          setError(e.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     })();
 
@@ -280,6 +304,63 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
+
+  // Mount SumUp Card when checkout ID is available
+  useEffect(() => {
+    if (!checkoutId || cardMounted) return;
+
+    const mountCard = async () => {
+      // Load SumUp Card SDK if not already loaded
+      if (!window.SumUpCard) {
+        const script = document.createElement("script");
+        script.src = "https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js";
+        script.async = true;
+        await new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      // Wait a bit for SDK to initialize
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      if (window.SumUpCard) {
+        try {
+          const card = window.SumUpCard.mount({
+            id: "sumup-card",
+            checkoutId: checkoutId,
+            onResponse: function (type, body) {
+              console.log("SumUp response:", type, body);
+              if (type === "success") {
+                if (typeof window !== "undefined" && window.Swal) {
+                  window.Swal.fire({
+                    icon: "success",
+                    title: "Payment successful!",
+                    text: "Thank you for your purchase.",
+                  });
+                }
+              } else if (type === "error") {
+                if (typeof window !== "undefined" && window.Swal) {
+                  window.Swal.fire({
+                    icon: "error",
+                    title: "Payment failed",
+                    text: body?.message || "Please try again.",
+                  });
+                }
+              }
+            },
+          });
+          setCardMounted(true);
+        } catch (e) {
+          console.error("Failed to mount SumUp Card:", e);
+          setError("Failed to load payment form");
+        }
+      }
+    };
+
+    mountCard();
+  }, [checkoutId, cardMounted]);
 
   return (
     <>
@@ -504,13 +585,17 @@ export default function Home() {
           <aside className="right">
             <div className="right-inner">
               <div className="if">
-                <iframe
-                  src={config.iframeUrl}
-                  width="500"
-                  height="1000"
-                  className="iframe-inner"
-                  scrolling="no"
-                ></iframe>
+                {loading ? (
+                  <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>
+                    Loading payment form...
+                  </div>
+                ) : error ? (
+                  <div style={{ padding: 40, textAlign: "center", color: "#b42318" }}>
+                    {error}
+                  </div>
+                ) : (
+                  <div id="sumup-card" style={{ minHeight: 400 }}></div>
+                )}
               </div>
             </div>
           </aside>

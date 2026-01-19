@@ -42,16 +42,17 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
     }
 
-    if (!body.name || !body.iframeUrl) {
+    if (!body.name || !body.apiKey) {
       return NextResponse.json(
-        { ok: false, error: "Name and iframe URL are required" },
+        { ok: false, error: "Name and API key are required" },
         { status: 400 }
       );
     }
 
     const account = await addSumupAccount({
       name: body.name,
-      iframeUrl: body.iframeUrl,
+      apiKey: body.apiKey,
+      merchantCode: body.merchantCode || "",
     });
 
     return NextResponse.json({ ok: true, account });
@@ -84,7 +85,8 @@ export async function PUT(request) {
 
     const account = await updateSumupAccount(body.id, {
       name: body.name,
-      iframeUrl: body.iframeUrl,
+      apiKey: body.apiKey,
+      merchantCode: body.merchantCode,
     });
 
     return NextResponse.json({ ok: true, account });
