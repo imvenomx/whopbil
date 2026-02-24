@@ -418,29 +418,109 @@ export default function CheckoutPage() {
     );
   }
 
-  // 3DS Modal
-  if (show3DS && threeDSUrl) {
+  // 3DS - Open popup and poll for completion
+  useEffect(() => {
+    if (show3DS && threeDSUrl) {
+      // Open 3DS in popup window
+      const popup = window.open(threeDSUrl, "3DS_Verification", "width=500,height=600,scrollbars=yes");
+
+      if (!popup) {
+        setError("Please allow popups to complete 3D Secure verification");
+        setShow3DS(false);
+        return;
+      }
+
+      // Start polling for payment status
+      let attempts = 0;
+      const maxAttempts = 90; // 3 minutes
+
+      const poll = async () => {
+        // Check if popup was closed
+        if (popup.closed) {
+          const done = await checkPaymentStatus();
+          if (!done) {
+            // Keep polling a bit more after popup closes
+            attempts++;
+            if (attempts < 10) {
+              setTimeout(poll, 2000);
+              return;
+            }
+          }
+          setShow3DS(false);
+          setProcessing(false);
+          return;
+        }
+
+        // Check payment status
+        const done = await checkPaymentStatus();
+        if (done) {
+          popup.close();
+          setShow3DS(false);
+          setProcessing(false);
+          return;
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 2000);
+        } else {
+          popup.close();
+          setShow3DS(false);
+          setError("3DS verification timed out. Please try again.");
+          setProcessing(false);
+        }
+      };
+
+      // Start polling after a delay
+      setTimeout(poll, 3000);
+    }
+  }, [show3DS, threeDSUrl]);
+
+  // 3DS waiting screen
+  if (show3DS) {
     return (
-      <main style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
-        <h2 style={{ marginBottom: 16, textAlign: "center" }}>Complete Verification</h2>
-        <p style={{ color: "#6d7175", marginBottom: 20, textAlign: "center" }}>
-          Please complete the 3D Secure verification below.
+      <main style={{ padding: 40, maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ fontSize: 48, marginBottom: 20 }}>🔐</div>
+        <h2 style={{ marginBottom: 16 }}>Complete 3D Secure Verification</h2>
+        <p style={{ color: "#6d7175", marginBottom: 20 }}>
+          A popup window has opened for bank verification.<br/>
+          Please complete the verification in that window.
         </p>
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden", marginBottom: 20 }}>
-          <iframe
-            src={threeDSUrl}
-            style={{ width: "100%", height: 500, border: "none" }}
-            title="3D Secure Verification"
-            onLoad={handle3DSComplete}
-          />
+        <div style={{
+          padding: 20,
+          background: "#f9fafb",
+          borderRadius: 8,
+          marginBottom: 20
+        }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            border: "4px solid #e5e7eb",
+            borderTopColor: "#3b82f6",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto 16px"
+          }} />
+          <p style={{ margin: 0, color: "#6d7175" }}>Waiting for verification...</p>
         </div>
-        {processing && <p style={{ textAlign: "center", color: "#6d7175" }}>Verifying payment status...</p>}
         <button
           onClick={() => { setShow3DS(false); setError("3DS verification cancelled"); }}
-          style={{ width: "100%", padding: "12px 20px", backgroundColor: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, cursor: "pointer" }}
+          style={{
+            padding: "12px 24px",
+            backgroundColor: "#f3f4f6",
+            color: "#374151",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+            cursor: "pointer"
+          }}
         >
           Cancel
         </button>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </main>
     );
   }
