@@ -11,14 +11,14 @@ export async function POST(request) {
 
     if (!config.apiKey) {
       return NextResponse.json(
-        { error: "No SumUp API key configured" },
+        { error: "[Step 1] No SumUp API key configured", step: 1 },
         { status: 500 }
       );
     }
 
     if (!config.merchantCode) {
       return NextResponse.json(
-        { error: "No SumUp merchant code configured" },
+        { error: "[Step 1] No SumUp merchant code configured", step: 1 },
         { status: 500 }
       );
     }
@@ -28,7 +28,7 @@ export async function POST(request) {
       body = await request.json();
     } catch (e) {
       return NextResponse.json(
-        { error: "Invalid request body" },
+        { error: "[Step 2] Invalid request body", step: 2 },
         { status: 400 }
       );
     }
@@ -49,21 +49,21 @@ export async function POST(request) {
 
     if (!email || !email.includes("@")) {
       return NextResponse.json(
-        { error: "Valid email is required" },
+        { error: "[Step 3] Valid email is required", step: 3 },
         { status: 400 }
       );
     }
 
     if (!amount) {
       return NextResponse.json(
-        { error: "Amount is required" },
+        { error: "[Step 3] Amount is required", step: 3 },
         { status: 400 }
       );
     }
 
     if (!card || !card.number || !card.expiry_month || !card.expiry_year || !card.cvv) {
       return NextResponse.json(
-        { error: "Complete card details are required" },
+        { error: "[Step 3] Complete card details are required", step: 3, received: { hasCard: !!card, hasNumber: !!card?.number, hasMonth: !!card?.expiry_month, hasYear: !!card?.expiry_year, hasCvv: !!card?.cvv } },
         { status: 400 }
       );
     }
@@ -99,7 +99,7 @@ export async function POST(request) {
           errorData = { raw: errorText };
         }
         return NextResponse.json(
-          { error: `Failed to create customer: ${errorData.message || errorData.error_code || errorText}`, details: errorData },
+          { error: `[Step 4] Failed to create customer: ${errorData.message || errorData.error_code || errorText}`, step: 4, details: errorData },
           { status: sumupCustomerResponse.status }
         );
       }
@@ -153,7 +153,8 @@ export async function POST(request) {
 
       return NextResponse.json(
         {
-          error: `Failed to create checkout: ${errorMsg}`,
+          error: `[Step 5] Failed to create checkout: ${errorMsg}`,
+          step: 5,
           details: errorData,
           checkoutPayload: { ...checkoutPayload, customer_id: "hidden" },
         },
@@ -240,7 +241,8 @@ export async function POST(request) {
 
       return NextResponse.json(
         {
-          error: `Payment failed: ${errorMessage}`,
+          error: `[Step 6] Payment processing failed: ${errorMessage}`,
+          step: 6,
           details: processData,
           checkoutId: checkoutData.id,
         },
@@ -254,9 +256,11 @@ export async function POST(request) {
     if (!isSuccess) {
       return NextResponse.json({
         success: false,
+        error: `[Step 7] Payment not completed. Status: ${processData.status}. ${processData.message || ""}`,
+        step: 7,
         checkoutId: checkoutData.id,
         status: processData.status,
-        message: processData.message || "Payment not completed",
+        details: processData,
       });
     }
 
@@ -334,7 +338,7 @@ export async function POST(request) {
   } catch (e) {
     console.error("[process-card] error:", e);
     return NextResponse.json(
-      { error: "Internal server error", details: e.message },
+      { error: `[Exception] Internal server error: ${e.message}`, step: 0, details: e.message, stack: e.stack },
       { status: 500 }
     );
   }
