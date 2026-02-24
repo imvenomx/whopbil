@@ -7,88 +7,82 @@ const I18N = {
   en: {
     store_name: "Cutekits",
     secure_checkout: "Secure checkout",
-    summary_title: "Subscription summary",
-    summary_items: "Recurring payment",
+    summary_title: "Order summary",
+    summary_items: "1 item",
     free_shipping: "Free shipping",
     subtotal: "Subtotal",
     total: "Total",
-    per_interval: "per",
     contact_title: "Contact",
-    contact_subtitle: "We'll use this to manage your subscription.",
+    contact_subtitle: "We'll use this to confirm your order.",
     email_label: "Email",
     email_placeholder: "Email",
-    email_required: "Email is required for subscription",
-    name_label: "Name",
-    name_placeholder: "Your name",
-    subscription_title: "Subscription",
-    interval_label: "Billing interval",
-    interval_daily: "Daily",
-    interval_weekly: "Weekly",
-    interval_monthly: "Monthly",
-    interval_yearly: "Yearly",
-    start_subscription: "Start Subscription",
-    processing: "Processing...",
-    subscription_success: "Subscription activated!",
-    subscription_success_text: "Your card has been saved and you will be charged automatically.",
-    payment_failed: "Payment failed",
+    marketing_opt_in: "Email me with news and offers",
+    shipping_title: "Shipping address",
+    address_label: "Address",
+    address_placeholder: "Address",
+    apt_label: "Apartment, suite, etc. (optional)",
+    apt_placeholder: "Apartment, suite, etc. (optional)",
+    city_label: "City",
+    city_placeholder: "City",
+    postal_label: "Postal code",
+    postal_placeholder: "Postal code",
+    country_label: "Country/Region",
+    country_fr: "France",
+    country_de: "Germany",
     return_to_cart: "Return to cart",
   },
   fr: {
     store_name: "Cutekits",
     secure_checkout: "Paiement sécurisé",
-    summary_title: "Récapitulatif abonnement",
-    summary_items: "Paiement récurrent",
+    summary_title: "Récapitulatif",
+    summary_items: "1 article",
     free_shipping: "Livraison gratuite",
     subtotal: "Sous-total",
     total: "Total",
-    per_interval: "par",
     contact_title: "Coordonnées",
-    contact_subtitle: "Nous utiliserons ces informations pour gérer votre abonnement.",
+    contact_subtitle: "Nous utiliserons ces informations pour confirmer votre commande.",
     email_label: "E-mail",
     email_placeholder: "E-mail",
-    email_required: "L'e-mail est requis pour l'abonnement",
-    name_label: "Nom",
-    name_placeholder: "Votre nom",
-    subscription_title: "Abonnement",
-    interval_label: "Fréquence de facturation",
-    interval_daily: "Quotidien",
-    interval_weekly: "Hebdomadaire",
-    interval_monthly: "Mensuel",
-    interval_yearly: "Annuel",
-    start_subscription: "Démarrer l'abonnement",
-    processing: "Traitement...",
-    subscription_success: "Abonnement activé !",
-    subscription_success_text: "Votre carte a été enregistrée et vous serez débité automatiquement.",
-    payment_failed: "Paiement échoué",
+    marketing_opt_in: "M'envoyer des offres et des actualités par e-mail",
+    shipping_title: "Adresse de livraison",
+    address_label: "Adresse",
+    address_placeholder: "Adresse",
+    apt_label: "Appartement, suite, etc. (facultatif)",
+    apt_placeholder: "Appartement, suite, etc. (facultatif)",
+    city_label: "Ville",
+    city_placeholder: "Ville",
+    postal_label: "Code postal",
+    postal_placeholder: "Code postal",
+    country_label: "Pays/Région",
+    country_fr: "France",
+    country_de: "Allemagne",
     return_to_cart: "Retour au panier",
   },
   de: {
     store_name: "Cutekits",
     secure_checkout: "Sicherer Checkout",
-    summary_title: "Abo-Übersicht",
-    summary_items: "Wiederkehrende Zahlung",
+    summary_title: "Bestellübersicht",
+    summary_items: "1 Artikel",
     free_shipping: "Kostenloser Versand",
     subtotal: "Zwischensumme",
     total: "Gesamt",
-    per_interval: "pro",
     contact_title: "Kontakt",
-    contact_subtitle: "Wir verwenden diese Informationen, um dein Abonnement zu verwalten.",
+    contact_subtitle: "Wir verwenden diese Informationen, um deine Bestellung zu bestätigen.",
     email_label: "E-Mail",
     email_placeholder: "E-Mail",
-    email_required: "E-Mail ist für das Abonnement erforderlich",
-    name_label: "Name",
-    name_placeholder: "Dein Name",
-    subscription_title: "Abonnement",
-    interval_label: "Abrechnungsintervall",
-    interval_daily: "Täglich",
-    interval_weekly: "Wöchentlich",
-    interval_monthly: "Monatlich",
-    interval_yearly: "Jährlich",
-    start_subscription: "Abonnement starten",
-    processing: "Verarbeitung...",
-    subscription_success: "Abonnement aktiviert!",
-    subscription_success_text: "Deine Karte wurde gespeichert und du wirst automatisch belastet.",
-    payment_failed: "Zahlung fehlgeschlagen",
+    marketing_opt_in: "E-Mails mit Neuigkeiten und Angeboten erhalten",
+    shipping_title: "Lieferadresse",
+    address_label: "Adresse",
+    address_placeholder: "Adresse",
+    apt_label: "Wohnung, Suite usw. (optional)",
+    apt_placeholder: "Wohnung, Suite usw. (optional)",
+    city_label: "Stadt",
+    city_placeholder: "Stadt",
+    postal_label: "Postleitzahl",
+    postal_placeholder: "Postleitzahl",
+    country_label: "Land/Region",
+    country_fr: "Frankreich",
+    country_de: "Deutschland",
     return_to_cart: "Zurück zum Warenkorb",
   },
 };
@@ -131,27 +125,18 @@ export default function CheckoutPage() {
   const pageId = params.id;
 
   const [pageConfig, setPageConfig] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [notFound, setNotFound] = useState(false);
-  const [lang, setLang] = useState("en");
-
-  // Subscription form state
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [emailError, setEmailError] = useState("");
-
-  // Checkout state
   const [checkoutId, setCheckoutId] = useState(null);
   const [customerId, setCustomerId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [cardLoading, setCardLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [cardMounted, setCardMounted] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
-
-  const cardRef = useRef(null);
+  const [notFound, setNotFound] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const cardInstanceRef = useRef(null);
 
   const displayPrice = pageConfig ? `${pageConfig.price} €` : "...";
-  const dict = I18N[lang] || I18N.en;
 
   // i18n
   useEffect(() => {
@@ -159,11 +144,7 @@ export default function CheckoutPage() {
     (async () => {
       const ipLang = await detectLangByIP();
       const browserLang = normalizeLang(navigator.language);
-      const detectedLang = ipLang || browserLang || "en";
-      if (!cancelled) {
-        setLang(detectedLang);
-        translatePage(detectedLang);
-      }
+      if (!cancelled) translatePage(ipLang || browserLang || "en");
     })();
     return () => { cancelled = true; };
   }, []);
@@ -198,58 +179,58 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, [pageId]);
 
-  // Handle starting subscription (creating tokenization checkout)
-  const handleStartSubscription = async () => {
-    // Validate email
-    if (!email || !email.includes("@")) {
-      setEmailError(dict.email_required);
-      return;
-    }
-    setEmailError("");
-    setProcessing(true);
+  // Create tokenization checkout when email is valid
+  const createTokenizationCheckout = async () => {
+    if (!email || !email.includes("@") || !pageConfig) return;
 
     try {
-      const amount = parseFloat(pageConfig.price.replace(",", ".")) || 84.00;
+      setCardLoading(true);
+      setError(null);
 
-      // Create tokenization checkout
-      const tokenizeRes = await fetch("/api/checkout/tokenize", {
+      // Unmount existing card if any
+      if (cardInstanceRef.current) {
+        try {
+          cardInstanceRef.current.unmount();
+        } catch (e) {
+          console.log("Failed to unmount previous card:", e);
+        }
+        cardInstanceRef.current = null;
+        setCardMounted(false);
+      }
+
+      const amount = parseFloat(pageConfig.price.replace(",", ".")) || 84.0;
+
+      // Create tokenization checkout (creates customer + checkout with mandate)
+      const res = await fetch("/api/checkout/tokenize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
-          name,
+          name: "",
           amount,
           currency: "EUR",
-          description: pageConfig?.productName || "Subscription",
+          description: pageConfig.productName || "Subscription payment",
         }),
       });
 
-      if (!tokenizeRes.ok) {
-        const errData = await tokenizeRes.json().catch(() => ({}));
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Failed to create checkout");
       }
 
-      const tokenizeData = await tokenizeRes.json();
-      setCheckoutId(tokenizeData.checkoutId);
-      setCustomerId(tokenizeData.customerId);
-      setShowPayment(true);
+      const data = await res.json();
+      setCheckoutId(data.checkoutId);
+      setCustomerId(data.customerId);
     } catch (e) {
       setError(e.message);
-      if (window.Swal) {
-        window.Swal.fire({
-          icon: "error",
-          title: dict.payment_failed,
-          text: e.message,
-        });
-      }
     } finally {
-      setProcessing(false);
+      setCardLoading(false);
     }
   };
 
-  // Mount SumUp Card when checkout is ready
+  // Mount SumUp Card
   useEffect(() => {
-    if (!checkoutId || !showPayment || cardMounted) return;
+    if (!checkoutId || cardMounted) return;
 
     const mountCard = async () => {
       if (!window.SumUpCard) {
@@ -267,15 +248,15 @@ export default function CheckoutPage() {
 
       if (window.SumUpCard) {
         try {
-          window.SumUpCard.mount({
+          const card = window.SumUpCard.mount({
             id: "sumup-card",
             checkoutId: checkoutId,
             onResponse: async function (type, body) {
+              console.log("SumUp response:", type, body);
               if (type === "success") {
-                // Complete tokenization and create subscription
+                // Complete tokenization - save card and create subscription
                 try {
-                  const amount = parseFloat(pageConfig.price.replace(",", ".")) || 84.00;
-
+                  const amount = parseFloat(pageConfig.price.replace(",", ".")) || 84.0;
                   const completeRes = await fetch("/api/checkout/complete-tokenization", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -283,57 +264,39 @@ export default function CheckoutPage() {
                       checkoutId,
                       customerId,
                       amount,
-                      interval: "monthly",
-                      intervalCount: 1,
-                      checkoutPageId: pageConfig?.id || null,
+                      interval: pageConfig.interval || "monthly",
+                      intervalCount: pageConfig.intervalCount || 1,
+                      checkoutPageId: pageId,
                       metadata: {
-                        productName: pageConfig?.productName || "Subscription",
-                        email,
-                        name,
+                        productName: pageConfig.productName,
                       },
                     }),
                   });
 
-                  if (!completeRes.ok) {
-                    const errData = await completeRes.json().catch(() => ({}));
-                    throw new Error(errData.error || "Failed to activate subscription");
-                  }
-
                   const completeData = await completeRes.json();
-
-                  if (window.Swal) {
-                    window.Swal.fire({
-                      icon: "success",
-                      title: dict.subscription_success,
-                      html: `
-                        <p>${dict.subscription_success_text}</p>
-                        <p style="margin-top: 12px; font-size: 14px; color: #666;">
-                          Card: ${completeData.paymentInstrument?.card_type || "Card"} ending in ${completeData.paymentInstrument?.last_4_digits || "****"}
-                        </p>
-                      `,
-                    });
-                  }
+                  console.log("Tokenization complete:", completeData);
                 } catch (e) {
-                  console.error("Subscription activation error:", e);
-                  if (window.Swal) {
-                    window.Swal.fire({
-                      icon: "warning",
-                      title: "Payment processed",
-                      text: "Payment was successful but subscription setup had an issue. Please contact support.",
-                    });
-                  }
+                  console.error("Failed to complete tokenization:", e);
                 }
-              } else if (type === "error") {
+
+                setPaymentSuccess(true);
                 if (window.Swal) {
                   window.Swal.fire({
-                    icon: "error",
-                    title: dict.payment_failed,
-                    text: body?.message || "Please try again.",
+                    icon: "success",
+                    title: "Payment successful!",
+                    text: "Thank you for your purchase. Your subscription is now active.",
                   });
                 }
+              } else if (type === "error" && window.Swal) {
+                window.Swal.fire({
+                  icon: "error",
+                  title: "Payment failed",
+                  text: body?.message || "Please try again.",
+                });
               }
             },
           });
+          cardInstanceRef.current = card;
           setCardMounted(true);
         } catch (e) {
           setError("Failed to load payment form");
@@ -342,13 +305,28 @@ export default function CheckoutPage() {
     };
 
     mountCard();
-  }, [checkoutId, showPayment, cardMounted, customerId, pageConfig, email, name, dict]);
+  }, [checkoutId, cardMounted, customerId, pageConfig, pageId]);
 
   if (notFound) {
     return (
       <main style={{ padding: 40, textAlign: "center" }}>
         <h1>Checkout Not Found</h1>
         <p>The checkout page you're looking for doesn't exist.</p>
+      </main>
+    );
+  }
+
+  if (paymentSuccess) {
+    return (
+      <main style={{ padding: 40, textAlign: "center", maxWidth: 600, margin: "0 auto" }}>
+        <div style={{ fontSize: 64, marginBottom: 24 }}>&#10003;</div>
+        <h1 style={{ marginBottom: 16 }}>Payment Successful!</h1>
+        <p style={{ color: "#6d7175", marginBottom: 24 }}>
+          Thank you for your subscription. Your card has been saved for future billing.
+        </p>
+        <p style={{ color: "#6d7175" }}>
+          You will receive a confirmation email at <strong>{email}</strong>
+        </p>
       </main>
     );
   }
@@ -379,23 +357,22 @@ export default function CheckoutPage() {
               <div className="summary summary-card">
                 <div className="summary-row" style={{ paddingTop: 0 }}>
                   <div>
-                    <div style={{ fontWeight: 650 }} data-i18n="summary_title">Subscription summary</div>
-                    <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }} data-i18n="summary_items">Recurring payment</div>
+                    <div style={{ fontWeight: 650 }} data-i18n="summary_title">Order summary</div>
+                    <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }} data-i18n="summary_items">1 item</div>
                   </div>
                   <span className="pill">EUR</span>
                 </div>
 
                 <div className="product">
-                  {pageConfig?.productImage ? (
+                  {pageConfig?.productImage && (
                     <img className="product-img" src={pageConfig.productImage} alt="Product" />
-                  ) : (
+                  )}
+                  {!pageConfig?.productImage && (
                     <img className="product-img" src="https://cdn-icons-png.flaticon.com/512/8832/8832119.png" alt="Product" />
                   )}
                   <div style={{ minWidth: 0 }}>
-                    <div className="product-title">{pageConfig?.productName || "Subscription"}</div>
-                    <div className="product-variant">
-                      {displayPrice} / month
-                    </div>
+                    <div className="product-title">{pageConfig?.productName || "Product"}</div>
+                    <div className="product-variant" data-i18n="free_shipping">Free shipping</div>
                   </div>
                   <div style={{ marginLeft: "auto", fontWeight: 650 }}>{displayPrice}</div>
                 </div>
@@ -406,13 +383,13 @@ export default function CheckoutPage() {
                 </div>
                 <div className="summary-row">
                   <span className="total" data-i18n="total">Total</span>
-                  <span className="total">{displayPrice} / month</span>
+                  <span className="total">{displayPrice}</span>
                 </div>
               </div>
 
               <div className="panel" style={{ padding: 0 }}>
                 <h2 className="section-title" data-i18n="contact_title">Contact</h2>
-                <p className="section-subtitle" data-i18n="contact_subtitle">We'll use this to manage your subscription.</p>
+                <p className="section-subtitle" data-i18n="contact_subtitle">We'll use this to confirm your order.</p>
                 <div className="form">
                   <div>
                     <label htmlFor="email" data-i18n="email_label">Email</label>
@@ -424,62 +401,50 @@ export default function CheckoutPage() {
                       data-i18n-placeholder="email_placeholder"
                       autoComplete="email"
                       value={email}
-                      onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
-                      disabled={showPayment}
-                      required
+                      onChange={(e) => setEmail(e.target.value)}
+                      onBlur={createTokenizationCheckout}
                     />
-                    {emailError && (
-                      <div style={{ color: "#b42318", fontSize: 12, marginTop: 4 }}>{emailError}</div>
-                    )}
                   </div>
-                  <div>
-                    <label htmlFor="name" data-i18n="name_label">Name</label>
-                    <input
-                      id="name"
-                      className="field"
-                      type="text"
-                      placeholder="Your name"
-                      data-i18n-placeholder="name_placeholder"
-                      autoComplete="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      disabled={showPayment}
-                    />
+                  <div className="checkbox">
+                    <input id="updates" type="checkbox" defaultChecked />
+                    <label htmlFor="updates" style={{ margin: 0, color: "var(--text)", fontSize: 13 }} data-i18n="marketing_opt_in">Email me with news and offers</label>
                   </div>
                 </div>
               </div>
 
-              {!showPayment && (
-                <div className="panel" style={{ borderTop: "1px solid var(--border-soft)", paddingLeft: 0, paddingRight: 0 }}>
-                  <div className="actions">
-                    <button
-                      className="btn-primary"
-                      onClick={handleStartSubscription}
-                      disabled={processing || loading}
-                      style={{
-                        width: "100%",
-                        padding: "14px 24px",
-                        fontSize: 16,
-                        fontWeight: 600,
-                        backgroundColor: "#1a1a1a",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 8,
-                        cursor: processing || loading ? "not-allowed" : "pointer",
-                        opacity: processing || loading ? 0.7 : 1,
-                      }}
-                    >
-                      {processing ? dict.processing : dict.start_subscription}
-                    </button>
+              <div className="panel" style={{ borderTop: "1px solid var(--border-soft)", paddingLeft: 0, paddingRight: 0 }}>
+                <h2 className="section-title" data-i18n="shipping_title">Shipping address</h2>
+                <div>
+                  <label htmlFor="address" data-i18n="address_label">Address</label>
+                  <input id="address" className="field" type="text" placeholder="Address" data-i18n-placeholder="address_placeholder" autoComplete="street-address" />
+                </div>
+                <div>
+                  <label htmlFor="apt" data-i18n="apt_label">Apartment, suite, etc. (optional)</label>
+                  <input id="apt" className="field" type="text" placeholder="Apartment, suite, etc. (optional)" data-i18n-placeholder="apt_placeholder" autoComplete="address-line2" />
+                </div>
+                <div className="row">
+                  <div>
+                    <label htmlFor="city" data-i18n="city_label">City</label>
+                    <input id="city" className="field" type="text" placeholder="City" data-i18n-placeholder="city_placeholder" autoComplete="address-level2" />
+                  </div>
+                  <div>
+                    <label htmlFor="postal" data-i18n="postal_label">Postal code</label>
+                    <input id="postal" className="field" type="text" placeholder="Postal code" data-i18n-placeholder="postal_placeholder" autoComplete="postal-code" />
                   </div>
                 </div>
-              )}
-
-              {!showPayment && (
-                <div className="actions" style={{ marginTop: 10 }}>
+                <div className="row">
+                  <div>
+                    <label htmlFor="country" data-i18n="country_label">Country/Region</label>
+                    <select id="country" className="field" autoComplete="country-name" defaultValue="FR">
+                      <option value="FR" data-i18n="country_fr">France</option>
+                      <option value="DE" data-i18n="country_de">Germany</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="actions">
                   <a className="link" href="#" onClick={(e) => e.preventDefault()} data-i18n="return_to_cart">Return to cart</a>
                 </div>
-              )}
+              </div>
             </div>
           </section>
 
@@ -490,13 +455,14 @@ export default function CheckoutPage() {
                   <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>Loading...</div>
                 ) : error ? (
                   <div style={{ padding: 40, textAlign: "center", color: "#b42318" }}>{error}</div>
-                ) : !showPayment ? (
+                ) : !email || !email.includes("@") ? (
                   <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>
-                    <div style={{ fontSize: 48, marginBottom: 16 }}>💳</div>
-                    <p>Enter your email and click "{dict.start_subscription}" to continue</p>
+                    Please enter your email to proceed with payment.
                   </div>
+                ) : cardLoading ? (
+                  <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>Loading payment form...</div>
                 ) : (
-                  <div id="sumup-card" ref={cardRef} style={{ minHeight: 400 }}></div>
+                  <div id="sumup-card" style={{ minHeight: 400 }}></div>
                 )}
               </div>
             </div>
