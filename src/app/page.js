@@ -372,22 +372,22 @@ export default function Home() {
         return;
       }
 
-      if (!res.ok || !data.success) {
-        // Check if 3DS is required
-        if (data.requires3DS && data.nextStep) {
-          setPendingCheckout({
-            checkoutId: data.checkoutId,
-            customerId: data.customerId,
-          });
-          setThreeDSUrl(data.nextStep.url);
-          setShow3DS(true);
-          setProcessing(false);
-          return;
-        }
+      // Check if 3DS is required (can come with success:false or in the response)
+      if (data.requires3DS && data.nextStep) {
+        setPendingCheckout({
+          checkoutId: data.checkoutId,
+          customerId: data.customerId,
+        });
+        setThreeDSUrl(data.nextStep.url);
+        setShow3DS(true);
+        setProcessing(false);
+        return;
+      }
 
+      if (!res.ok || !data.success) {
         // Show FULL error details in UI
         const fullError = JSON.stringify(data, null, 2);
-        setError(`Error: ${data.error}\n\nFull response:\n${fullError}`);
+        setError(`Error: ${data.error || "Unknown error"}\n\nFull response:\n${fullError}`);
         return;
       }
 
