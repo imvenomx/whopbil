@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 const I18N = {
@@ -120,21 +120,42 @@ async function detectLangByIP() {
   }
 }
 
+function formatCardNumber(value) {
+  const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+  const matches = v.match(/\d{4,16}/g);
+  const match = (matches && matches[0]) || "";
+  const parts = [];
+  for (let i = 0, len = match.length; i < len; i += 4) {
+    parts.push(match.substring(i, i + 4));
+  }
+  return parts.length ? parts.join(" ") : v;
+}
+
+function formatExpiry(value) {
+  const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+  if (v.length >= 2) {
+    return v.substring(0, 2) + (v.length > 2 ? " / " + v.substring(2, 4) : "");
+  }
+  return v;
+}
+
 export default function CheckoutPage() {
   const params = useParams();
   const pageId = params.id;
 
   const [pageConfig, setPageConfig] = useState(null);
-  const [email, setEmail] = useState("");
-  const [checkoutId, setCheckoutId] = useState(null);
-  const [customerId, setCustomerId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
-  const [cardMounted, setCardMounted] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const cardInstanceRef = useRef(null);
-  const sessionIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
+  // Form fields
+  const [email, setEmail] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [cardName, setCardName] = useState("");
 
   const displayPrice = pageConfig ? `${pageConfig.price} €` : "...";
 
@@ -149,7 +170,7 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // Load page config and create checkout immediately
+  // Load page config
   useEffect(() => {
     let cancelled = false;
 
@@ -158,7 +179,6 @@ export default function CheckoutPage() {
         setLoading(true);
         setError(null);
 
-        // Fetch page config
         const pageRes = await fetch(`/api/checkout-page/${pageId}`, { cache: "no-store" });
         if (pageRes.status === 404) {
           setNotFound(true);
@@ -170,32 +190,6 @@ export default function CheckoutPage() {
         const pageData = await pageRes.json();
         if (cancelled) return;
         setPageConfig(pageData);
-
-        // Create tokenization checkout immediately with placeholder email
-        const amount = parseFloat(pageData.price.replace(",", ".")) || 84.0;
-        const placeholderEmail = `pending_${sessionIdRef.current}@placeholder.local`;
-
-        const res = await fetch("/api/checkout/tokenize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: placeholderEmail,
-            name: "",
-            amount,
-            currency: "EUR",
-            description: pageData.productName || "Subscription payment",
-          }),
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || "Failed to create checkout");
-        }
-
-        const data = await res.json();
-        if (cancelled) return;
-        setCheckoutId(data.checkoutId);
-        setCustomerId(data.customerId);
       } catch (e) {
         if (!cancelled) setError(e.message);
       } finally {
@@ -206,100 +200,87 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, [pageId]);
 
-  // Mount SumUp Card
-  useEffect(() => {
-    if (!checkoutId || cardMounted) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
 
-    const mountCard = async () => {
-      if (!window.SumUpCard) {
-        const script = document.createElement("script");
-        script.src = "https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js";
-        script.async = true;
-        await new Promise((resolve, reject) => {
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
+    if (!email || !email.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
+    if (cardNumber.replace(/\s/g, "").length < 15) {
+      setError("Please enter a valid card number");
+      return;
+    }
+    if (cardExpiry.length < 7) {
+      setError("Please enter a valid expiry date (MM / YY)");
+      return;
+    }
+    if (cardCvv.length < 3) {
+      setError("Please enter a valid CVV");
+      return;
+    }
+
+    setProcessing(true);
+
+    try {
+      const amount = parseFloat(pageConfig.price.replace(",", ".")) || 84.0;
+      const [expiryMonth, expiryYear] = cardExpiry.split(" / ");
+
+      const res = await fetch("/api/checkout/process-card", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          name: cardName,
+          amount,
+          currency: "EUR",
+          description: pageConfig.productName || "Subscription payment",
+          card: {
+            number: cardNumber.replace(/\s/g, ""),
+            expiry_month: expiryMonth,
+            expiry_year: expiryYear,
+            cvv: cardCvv,
+            name: cardName,
+          },
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Payment failed");
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      setPaymentSuccess(true);
 
-      if (window.SumUpCard) {
-        try {
-          const card = window.SumUpCard.mount({
-            id: "sumup-card",
-            checkoutId: checkoutId,
-            onResponse: async function (type, body) {
-              console.log("SumUp response:", type, body);
-              if (type === "success") {
-                // Get the email from the form
-                const emailInput = document.getElementById("email");
-                const customerEmail = emailInput?.value || "";
-
-                if (!customerEmail || !customerEmail.includes("@")) {
-                  if (window.Swal) {
-                    window.Swal.fire({
-                      icon: "warning",
-                      title: "Email required",
-                      text: "Please enter your email address.",
-                    });
-                  }
-                  return;
-                }
-
-                // Complete tokenization - save card and create subscription
-                try {
-                  const amount = parseFloat(pageConfig.price.replace(",", ".")) || 84.0;
-                  const completeRes = await fetch("/api/checkout/complete-tokenization", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      checkoutId,
-                      customerId,
-                      amount,
-                      interval: pageConfig.interval || "monthly",
-                      intervalCount: pageConfig.intervalCount || 1,
-                      checkoutPageId: pageId,
-                      email: customerEmail,
-                      metadata: {
-                        productName: pageConfig.productName,
-                      },
-                    }),
-                  });
-
-                  const completeData = await completeRes.json();
-                  console.log("Tokenization complete:", completeData);
-                } catch (e) {
-                  console.error("Failed to complete tokenization:", e);
-                }
-
-                setPaymentSuccess(true);
-                if (window.Swal) {
-                  window.Swal.fire({
-                    icon: "success",
-                    title: "Payment successful!",
-                    text: "Thank you for your purchase. Your subscription is now active.",
-                  });
-                }
-              } else if (type === "error" && window.Swal) {
-                window.Swal.fire({
-                  icon: "error",
-                  title: "Payment failed",
-                  text: body?.message || "Please try again.",
-                });
-              }
+      // Create subscription
+      try {
+        await fetch("/api/checkout/complete-tokenization", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            checkoutId: data.checkoutId,
+            customerId: data.customerId,
+            amount,
+            interval: pageConfig.interval || "monthly",
+            intervalCount: pageConfig.intervalCount || 1,
+            checkoutPageId: pageId,
+            email,
+            metadata: {
+              productName: pageConfig.productName,
             },
-          });
-          cardInstanceRef.current = card;
-          setCardMounted(true);
-        } catch (e) {
-          setError("Failed to load payment form");
-        }
+          }),
+        });
+      } catch (subErr) {
+        console.error("Failed to create subscription:", subErr);
       }
-    };
-
-    mountCard();
-  }, [checkoutId, cardMounted, customerId, pageConfig, pageId]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   if (notFound) {
     return (
@@ -313,7 +294,7 @@ export default function CheckoutPage() {
   if (paymentSuccess) {
     return (
       <main style={{ padding: 40, textAlign: "center", maxWidth: 600, margin: "0 auto" }}>
-        <div style={{ fontSize: 64, marginBottom: 24 }}>&#10003;</div>
+        <div style={{ fontSize: 64, marginBottom: 24, color: "#22c55e" }}>&#10003;</div>
         <h1 style={{ marginBottom: 16 }}>Payment Successful!</h1>
         <p style={{ color: "#6d7175", marginBottom: 24 }}>
           Thank you for your subscription. Your card has been saved for future billing.
@@ -358,10 +339,9 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="product">
-                  {pageConfig?.productImage && (
+                  {pageConfig?.productImage ? (
                     <img className="product-img" src={pageConfig.productImage} alt="Product" />
-                  )}
-                  {!pageConfig?.productImage && (
+                  ) : (
                     <img className="product-img" src="https://cdn-icons-png.flaticon.com/512/8832/8832119.png" alt="Product" />
                   )}
                   <div style={{ minWidth: 0 }}>
@@ -445,11 +425,109 @@ export default function CheckoutPage() {
             <div className="right-inner">
               <div className="if">
                 {loading ? (
-                  <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>Loading payment form...</div>
-                ) : error ? (
-                  <div style={{ padding: 40, textAlign: "center", color: "#b42318" }}>{error}</div>
+                  <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>Loading...</div>
                 ) : (
-                  <div id="sumup-card" style={{ minHeight: 400 }}></div>
+                  <form onSubmit={handleSubmit} style={{ padding: 20 }}>
+                    <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 600 }}>Payment Details</h3>
+
+                    {error && (
+                      <div style={{
+                        background: "#fef2f2",
+                        border: "1px solid #fecaca",
+                        borderRadius: 8,
+                        padding: 12,
+                        marginBottom: 16,
+                        color: "#991b1b",
+                        fontSize: 14,
+                      }}>
+                        {error}
+                      </div>
+                    )}
+
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ display: "block", marginBottom: 6, fontSize: 14, fontWeight: 500 }}>
+                        Card Number
+                      </label>
+                      <input
+                        type="text"
+                        className="field"
+                        placeholder="1234 5678 9012 3456"
+                        value={cardNumber}
+                        onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                        maxLength={19}
+                        autoComplete="cc-number"
+                        style={{ fontFamily: "monospace", letterSpacing: 1 }}
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 14, fontWeight: 500 }}>
+                          Expiry Date
+                        </label>
+                        <input
+                          type="text"
+                          className="field"
+                          placeholder="MM / YY"
+                          value={cardExpiry}
+                          onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
+                          maxLength={7}
+                          autoComplete="cc-exp"
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 14, fontWeight: 500 }}>
+                          CVV
+                        </label>
+                        <input
+                          type="text"
+                          className="field"
+                          placeholder="123"
+                          value={cardCvv}
+                          onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                          maxLength={4}
+                          autoComplete="cc-csc"
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: 20 }}>
+                      <label style={{ display: "block", marginBottom: 6, fontSize: 14, fontWeight: 500 }}>
+                        Cardholder Name
+                      </label>
+                      <input
+                        type="text"
+                        className="field"
+                        placeholder="John Doe"
+                        value={cardName}
+                        onChange={(e) => setCardName(e.target.value)}
+                        autoComplete="cc-name"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={processing}
+                      style={{
+                        width: "100%",
+                        padding: "14px 20px",
+                        backgroundColor: processing ? "#9ca3af" : "#1a1a1a",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 8,
+                        fontSize: 16,
+                        fontWeight: 600,
+                        cursor: processing ? "not-allowed" : "pointer",
+                        transition: "background-color 0.2s",
+                      }}
+                    >
+                      {processing ? "Processing..." : `Pay ${displayPrice}`}
+                    </button>
+
+                    <p style={{ marginTop: 16, fontSize: 12, color: "#6d7175", textAlign: "center" }}>
+                      Your payment is secured with SSL encryption
+                    </p>
+                  </form>
                 )}
               </div>
             </div>

@@ -1,0 +1,304 @@
+import { NextResponse } from "next/server";
+import { readConfig, getCustomerByEmail, addCustomer, updateCustomer } from "@/lib/configStore";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// Process card payment directly (without widget) for tokenization
+export async function POST(request) {
+  try {
+    const config = await readConfig();
+
+    if (!config.apiKey) {
+      return NextResponse.json(
+        { error: "No SumUp API key configured" },
+        { status: 500 }
+      );
+    }
+
+    if (!config.merchantCode) {
+      return NextResponse.json(
+        { error: "No SumUp merchant code configured" },
+        { status: 500 }
+      );
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
+
+    const {
+      email,
+      name,
+      amount,
+      currency = "EUR",
+      description = "Subscription",
+      card, // { number, expiry_month, expiry_year, cvv, name, zip_code }
+    } = body;
+
+    // Get user agent and IP for mandate
+    const userAgent = request.headers.get("user-agent") || "Unknown";
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const userIp = forwardedFor ? forwardedFor.split(",")[0].trim() : "127.0.0.1";
+
+    if (!email || !email.includes("@")) {
+      return NextResponse.json(
+        { error: "Valid email is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!amount) {
+      return NextResponse.json(
+        { error: "Amount is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!card || !card.number || !card.expiry_month || !card.expiry_year || !card.cvv) {
+      return NextResponse.json(
+        { error: "Complete card details are required" },
+        { status: 400 }
+      );
+    }
+
+    // Get or create customer
+    let customer = await getCustomerByEmail(email);
+
+    if (!customer) {
+      // Create customer in SumUp
+      const customerId = `cust_${Date.now()}`;
+      const sumupCustomerResponse = await fetch("https://api.sumup.com/v0.1/customers", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${config.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_id: customerId,
+          personal_details: {
+            email,
+            first_name: name || card.name || "",
+          },
+        }),
+      });
+
+      if (!sumupCustomerResponse.ok) {
+        const errorText = await sumupCustomerResponse.text();
+        console.error("[process-card] SumUp customer creation error:", sumupCustomerResponse.status, errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { raw: errorText };
+        }
+        return NextResponse.json(
+          { error: `Failed to create customer: ${errorData.message || errorData.error_code || errorText}`, details: errorData },
+          { status: sumupCustomerResponse.status }
+        );
+      }
+
+      const sumupCustomerData = await sumupCustomerResponse.json();
+      console.log("[process-card] SumUp customer created:", sumupCustomerData.customer_id);
+
+      // Store customer locally
+      customer = await addCustomer({
+        sumupCustomerId: sumupCustomerData.customer_id,
+        email,
+        name: name || card.name || "",
+        paymentInstruments: [],
+      });
+    }
+
+    // Create checkout with purpose SETUP_RECURRING_PAYMENT
+    const checkoutPayload = {
+      checkout_reference: `card_${Date.now()}`,
+      amount: parseFloat(amount),
+      currency,
+      merchant_code: config.merchantCode,
+      description,
+      customer_id: customer.sumupCustomerId,
+      purpose: "SETUP_RECURRING_PAYMENT",
+    };
+
+    console.log("[process-card] Creating checkout:", checkoutPayload);
+
+    const checkoutResponse = await fetch("https://api.sumup.com/v0.1/checkouts", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(checkoutPayload),
+    });
+
+    if (!checkoutResponse.ok) {
+      const errorText = await checkoutResponse.text();
+      console.error("[process-card] Checkout creation error:", checkoutResponse.status, errorText);
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { raw: errorText };
+      }
+      return NextResponse.json(
+        { error: `Failed to create checkout: ${errorData.message || errorData.error_code || errorText}`, details: errorData },
+        { status: checkoutResponse.status }
+      );
+    }
+
+    const checkoutData = await checkoutResponse.json();
+    console.log("[process-card] Checkout created:", checkoutData.id);
+
+    // Process the checkout with card details and mandate
+    // The mandate object states that we have obtained customer consent
+    const processPayload = {
+      payment_type: "card",
+      installments: 1,
+      card: {
+        name: card.name || name || "Cardholder",
+        number: card.number.replace(/\s/g, ""),
+        expiry_month: card.expiry_month.padStart(2, "0"),
+        expiry_year: card.expiry_year.length === 2 ? `20${card.expiry_year}` : card.expiry_year,
+        cvv: card.cvv,
+        zip_code: card.zip_code || "",
+      },
+      mandate: {
+        type: "recurrent",
+        user_agent: userAgent,
+        user_ip: userIp,
+      },
+    };
+
+    console.log("[process-card] Processing checkout with card (number hidden)");
+
+    const processResponse = await fetch(
+      `https://api.sumup.com/v0.1/checkouts/${checkoutData.id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${config.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(processPayload),
+      }
+    );
+
+    const processText = await processResponse.text();
+    let processData;
+    try {
+      processData = JSON.parse(processText);
+    } catch {
+      processData = { raw: processText };
+    }
+
+    console.log("[process-card] Process response:", processResponse.status, processData);
+
+    if (!processResponse.ok) {
+      return NextResponse.json(
+        {
+          error: `Payment failed: ${processData.message || processData.error_code || "Unknown error"}`,
+          details: processData,
+          checkoutId: checkoutData.id,
+        },
+        { status: processResponse.status }
+      );
+    }
+
+    // Check if payment was successful
+    const isSuccess = processData.status === "PAID";
+
+    if (!isSuccess) {
+      return NextResponse.json({
+        success: false,
+        checkoutId: checkoutData.id,
+        status: processData.status,
+        message: processData.message || "Payment not completed",
+      });
+    }
+
+    // Payment successful - now fetch and store the payment instrument (token)
+    let paymentInstrument = null;
+
+    if (processData.payment_instrument?.token) {
+      // Token returned directly in response
+      paymentInstrument = {
+        token: processData.payment_instrument.token,
+        card_type: card.number.startsWith("4") ? "VISA" : card.number.startsWith("5") ? "MASTERCARD" : "UNKNOWN",
+        last_4_digits: card.number.slice(-4),
+        expiry_month: card.expiry_month,
+        expiry_year: card.expiry_year,
+        active: true,
+      };
+    } else {
+      // Fetch payment instruments from customer
+      try {
+        const instrumentsResponse = await fetch(
+          `https://api.sumup.com/v0.1/customers/${customer.sumupCustomerId}/payment-instruments`,
+          {
+            headers: {
+              "Authorization": `Bearer ${config.apiKey}`,
+            },
+          }
+        );
+
+        if (instrumentsResponse.ok) {
+          const instrumentsData = await instrumentsResponse.json();
+          const instruments = Array.isArray(instrumentsData)
+            ? instrumentsData
+            : (instrumentsData.payment_instruments || []);
+
+          if (instruments.length > 0) {
+            const latest = instruments[instruments.length - 1] || instruments[0];
+            paymentInstrument = {
+              token: latest.token,
+              card_type: latest.card?.type || latest.type || "UNKNOWN",
+              last_4_digits: latest.card?.last_4_digits || latest.last_4_digits || card.number.slice(-4),
+              expiry_month: latest.card?.expiry_month || card.expiry_month,
+              expiry_year: latest.card?.expiry_year || card.expiry_year,
+              active: true,
+            };
+          }
+        }
+      } catch (e) {
+        console.error("[process-card] Failed to fetch payment instruments:", e);
+      }
+    }
+
+    // Update customer with payment instrument if we got one
+    if (paymentInstrument) {
+      const existingInstruments = customer.paymentInstruments || [];
+      const updatedInstruments = existingInstruments.map(i => ({ ...i, active: false }));
+      updatedInstruments.push(paymentInstrument);
+
+      await updateCustomer(customer.id, {
+        paymentInstruments: updatedInstruments,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      checkoutId: checkoutData.id,
+      status: processData.status,
+      transactionCode: processData.transaction_code || null,
+      customerId: customer.id,
+      cardSaved: !!paymentInstrument,
+      card: paymentInstrument ? {
+        last_4_digits: paymentInstrument.last_4_digits,
+        card_type: paymentInstrument.card_type,
+      } : null,
+    });
+  } catch (e) {
+    console.error("[process-card] error:", e);
+    return NextResponse.json(
+      { error: "Internal server error", details: e.message },
+      { status: 500 }
+    );
+  }
+}
