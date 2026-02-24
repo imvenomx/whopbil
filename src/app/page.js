@@ -280,9 +280,21 @@ export default function Home() {
       });
 
       const data = await res.json();
+      console.log("Payment response:", data);
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Payment failed");
+        // Show detailed error including any details from SumUp
+        let errorMsg = data.error || "Payment failed";
+        if (data.details) {
+          console.error("Payment error details:", data.details);
+          // Try to extract more specific error info
+          if (data.details.error_code) errorMsg += ` (${data.details.error_code})`;
+          if (data.details.param) errorMsg += ` - field: ${data.details.param}`;
+          if (data.details.message && data.details.message !== data.error) {
+            errorMsg += `: ${data.details.message}`;
+          }
+        }
+        throw new Error(errorMsg);
       }
 
       // Payment successful
