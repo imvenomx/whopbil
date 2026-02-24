@@ -54,7 +54,8 @@ export async function POST(request) {
     }
 
     const checkoutData = await checkoutResponse.json();
-    console.log("[check-status] Checkout status:", checkoutData.status, checkoutData);
+    console.log("[check-status] Checkout status:", checkoutData.status);
+    console.log("[check-status] Full checkout data:", JSON.stringify(checkoutData, null, 2));
 
     // Check if still pending (3DS in progress)
     if (checkoutData.status === "PENDING") {

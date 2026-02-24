@@ -209,54 +209,55 @@ export default function CheckoutPage() {
   }, [pageId]);
 
   // Check payment status after 3DS
-  const checkPaymentStatus = async () => {
-    if (!pendingCheckout) return;
+  const checkPaymentStatus = async (checkout) => {
+    const checkoutData = checkout || pendingCheckout;
+    if (!checkoutData) return { done: false };
 
     try {
+      console.log("[3DS] Checking status for:", checkoutData.checkoutId);
+
       const res = await fetch("/api/checkout/check-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          checkoutId: pendingCheckout.checkoutId,
-          customerId: pendingCheckout.customerId,
+          checkoutId: checkoutData.checkoutId,
+          customerId: checkoutData.customerId,
         }),
       });
 
       const data = await res.json();
+      console.log("[3DS] Status response:", data);
 
       if (data.pending) {
-        return false;
+        return { done: false, status: "pending" };
       }
 
       if (data.success) {
-        setShow3DS(false);
-        setPaymentSuccess(true);
-
-        const amount = parseFloat(pageConfig.price.replace(",", ".")) || 84.0;
+        const amount = parseFloat(pageConfig?.price?.replace(",", ".")) || 84.0;
         try {
           await fetch("/api/checkout/complete-tokenization", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              checkoutId: pendingCheckout.checkoutId,
-              customerId: pendingCheckout.customerId,
+              checkoutId: checkoutData.checkoutId,
+              customerId: checkoutData.customerId,
               amount,
-              interval: pageConfig.interval || "monthly",
-              intervalCount: pageConfig.intervalCount || 1,
+              interval: pageConfig?.interval || "monthly",
+              intervalCount: pageConfig?.intervalCount || 1,
               checkoutPageId: pageId,
               email,
             }),
           });
-        } catch (subErr) {}
-        return true;
+        } catch (subErr) {
+          console.error("[3DS] Subscription error:", subErr);
+        }
+        return { done: true, success: true };
       } else {
-        setShow3DS(false);
-        setError(data.error || "Payment failed after 3DS");
-        return true;
+        return { done: true, success: false, error: data.error || "Payment failed" };
       }
     } catch (err) {
-      setError(`Error checking status: ${err.message}`);
-      return true;
+      console.error("[3DS] Check status error:", err);
+      return { done: false, error: err.message };
     }
   };
 
@@ -420,35 +421,60 @@ export default function CheckoutPage() {
 
   // 3DS iframe - poll for completion
   useEffect(() => {
-    if (show3DS && threeDSUrl) {
+    if (show3DS && threeDSUrl && pendingCheckout) {
       let attempts = 0;
       const maxAttempts = 90; // 3 minutes
       let pollInterval;
+      let stopped = false;
+
+      console.log("[3DS] Starting polling for checkout:", pendingCheckout.checkoutId);
 
       const poll = async () => {
-        const done = await checkPaymentStatus();
-        if (done) {
+        if (stopped) return;
+
+        const result = await checkPaymentStatus(pendingCheckout);
+        console.log("[3DS] Poll result:", result);
+
+        if (result.done) {
           clearInterval(pollInterval);
+          stopped = true;
           setShow3DS(false);
           setProcessing(false);
+
+          if (result.success) {
+            setPaymentSuccess(true);
+          } else {
+            setError(result.error || "Payment failed after 3DS");
+          }
           return;
         }
 
         attempts++;
+        console.log("[3DS] Poll attempt:", attempts);
+
         if (attempts >= maxAttempts) {
           clearInterval(pollInterval);
+          stopped = true;
           setShow3DS(false);
           setError("3DS verification timed out. Please try again.");
           setProcessing(false);
         }
       };
 
-      // Start polling every 2 seconds
-      pollInterval = setInterval(poll, 2000);
+      // Start polling every 2 seconds after initial delay
+      setTimeout(() => {
+        if (!stopped) {
+          poll(); // First poll
+          pollInterval = setInterval(poll, 2000);
+        }
+      }, 2000);
 
-      return () => clearInterval(pollInterval);
+      return () => {
+        stopped = true;
+        clearInterval(pollInterval);
+      };
     }
-  }, [show3DS, threeDSUrl]);
+  }, [show3DS, threeDSUrl, pendingCheckout?.checkoutId]);
 
   // 3DS iframe modal
   if (show3DS && threeDSUrl) {
