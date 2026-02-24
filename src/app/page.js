@@ -629,7 +629,7 @@ export default function Home() {
                   <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>Loading...</div>
                 ) : (
                   <form onSubmit={handleSubmit} style={{ padding: 20 }}>
-                    <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 600 }}>Payment Details</h3>
+                    <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 600 }}>Payment Details <span style={{fontSize: 10, color: "#999"}}>(v3)</span></h3>
 
                     {/* Debug Log */}
                     {debugLog.length > 0 && (
