@@ -117,13 +117,13 @@ export async function POST(request) {
     }
 
     // Create checkout - use regular checkout, mandate is added at processing step
+    // Note: customer_id is optional for checkout, we link via mandate instead
     const checkoutPayload = {
       checkout_reference: `card_${Date.now()}`,
       amount: parseFloat(amount),
       currency,
       merchant_code: config.merchantCode,
       description,
-      customer_id: customer.sumupCustomerId,
     };
 
     console.log("[process-card] Creating checkout:", checkoutPayload);
