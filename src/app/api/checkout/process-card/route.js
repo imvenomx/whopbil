@@ -256,7 +256,7 @@ export async function POST(request) {
     if (!isSuccess) {
       return NextResponse.json({
         success: false,
-        error: `[Step 7] Payment not completed. Status: ${processData.status}. ${processData.message || ""}`,
+        error: `[Step 7] Payment not completed. Status: ${processData.status}. Full response: ${JSON.stringify(processData)}`,
         step: 7,
         checkoutId: checkoutData.id,
         status: processData.status,
