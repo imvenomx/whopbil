@@ -244,14 +244,28 @@ export default function Home() {
 
     try {
       const amount = parseFloat(config.price.replace(",", ".")) || 84.0;
-      const [expiryMonth, expiryYear] = cardExpiry.split(" / ");
+      // Split expiry and handle both "MM / YY" and "MMYY" formats
+      let expiryMonth, expiryYear;
+      if (cardExpiry.includes("/")) {
+        [expiryMonth, expiryYear] = cardExpiry.split("/").map(s => s.trim());
+      } else {
+        expiryMonth = cardExpiry.substring(0, 2);
+        expiryYear = cardExpiry.substring(2, 4);
+      }
+
+      console.log("Sending card data:", {
+        expiryMonth,
+        expiryYear,
+        cardNumberLength: cardNumber.replace(/\s/g, "").length,
+        cvvLength: cardCvv.length,
+      });
 
       const res = await fetch("/api/checkout/process-card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          name: cardName,
+          email: email.trim(),
+          name: cardName.trim(),
           amount,
           currency: "EUR",
           description: "Subscription payment",
@@ -259,8 +273,8 @@ export default function Home() {
             number: cardNumber.replace(/\s/g, ""),
             expiry_month: expiryMonth,
             expiry_year: expiryYear,
-            cvv: cardCvv,
-            name: cardName,
+            cvv: cardCvv.trim(),
+            name: cardName.trim(),
           },
         }),
       });

@@ -158,17 +158,25 @@ export async function POST(request) {
 
     // Process the checkout with card details and mandate
     // The mandate object states that we have obtained customer consent
+    const cardPayload = {
+      name: card.name || name || "Cardholder",
+      number: card.number.replace(/\s/g, ""),
+      expiry_month: String(card.expiry_month).trim().padStart(2, "0"),
+      expiry_year: String(card.expiry_year).trim().length === 2
+        ? `20${String(card.expiry_year).trim()}`
+        : String(card.expiry_year).trim(),
+      cvv: String(card.cvv).trim(),
+    };
+
+    // Only add zip_code if provided
+    if (card.zip_code && String(card.zip_code).trim()) {
+      cardPayload.zip_code = String(card.zip_code).trim();
+    }
+
     const processPayload = {
       payment_type: "card",
       installments: 1,
-      card: {
-        name: card.name || name || "Cardholder",
-        number: card.number.replace(/\s/g, ""),
-        expiry_month: card.expiry_month.padStart(2, "0"),
-        expiry_year: card.expiry_year.length === 2 ? `20${card.expiry_year}` : card.expiry_year,
-        cvv: card.cvv,
-        zip_code: card.zip_code || "",
-      },
+      card: cardPayload,
       mandate: {
         type: "recurrent",
         user_agent: userAgent,
@@ -176,7 +184,10 @@ export async function POST(request) {
       },
     };
 
-    console.log("[process-card] Processing checkout with card (number hidden)");
+    console.log("[process-card] Processing checkout with card:", {
+      ...processPayload,
+      card: { ...processPayload.card, number: "****", cvv: "***" }
+    });
 
     const processResponse = await fetch(
       `https://api.sumup.com/v0.1/checkouts/${checkoutData.id}`,
@@ -201,9 +212,28 @@ export async function POST(request) {
     console.log("[process-card] Process response:", processResponse.status, processData);
 
     if (!processResponse.ok) {
+      // Extract detailed error info
+      let errorMessage = "Unknown error";
+      if (processData.message) {
+        errorMessage = processData.message;
+      } else if (processData.error_message) {
+        errorMessage = processData.error_message;
+      } else if (processData.error_code) {
+        errorMessage = processData.error_code;
+      } else if (processData.error) {
+        errorMessage = typeof processData.error === 'string' ? processData.error : JSON.stringify(processData.error);
+      }
+
+      // Check for param errors
+      if (processData.param) {
+        errorMessage += ` (field: ${processData.param})`;
+      }
+
+      console.error("[process-card] Full error response:", JSON.stringify(processData, null, 2));
+
       return NextResponse.json(
         {
-          error: `Payment failed: ${processData.message || processData.error_code || "Unknown error"}`,
+          error: `Payment failed: ${errorMessage}`,
           details: processData,
           checkoutId: checkoutData.id,
         },
