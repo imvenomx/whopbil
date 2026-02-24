@@ -116,7 +116,7 @@ export async function POST(request) {
       });
     }
 
-    // Create checkout with purpose SETUP_RECURRING_PAYMENT
+    // Create checkout - use regular checkout, mandate is added at processing step
     const checkoutPayload = {
       checkout_reference: `card_${Date.now()}`,
       amount: parseFloat(amount),
@@ -124,7 +124,6 @@ export async function POST(request) {
       merchant_code: config.merchantCode,
       description,
       customer_id: customer.sumupCustomerId,
-      purpose: "SETUP_RECURRING_PAYMENT",
     };
 
     console.log("[process-card] Creating checkout:", checkoutPayload);
@@ -147,8 +146,17 @@ export async function POST(request) {
       } catch {
         errorData = { raw: errorText };
       }
+      // Include more details in the error message
+      let errorMsg = errorData.message || errorData.error_code || "Unknown error";
+      if (errorData.error_message) errorMsg = errorData.error_message;
+      if (errorData.param) errorMsg += ` (param: ${errorData.param})`;
+
       return NextResponse.json(
-        { error: `Failed to create checkout: ${errorData.message || errorData.error_code || errorText}`, details: errorData },
+        {
+          error: `Failed to create checkout: ${errorMsg}`,
+          details: errorData,
+          checkoutPayload: { ...checkoutPayload, customer_id: "hidden" },
+        },
         { status: checkoutResponse.status }
       );
     }
