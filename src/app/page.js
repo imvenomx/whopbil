@@ -237,11 +237,11 @@ export default function Home() {
   const [checkoutId, setCheckoutId] = useState(null);
   const [customerId, setCustomerId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [cardLoading, setCardLoading] = useState(false);
   const [error, setError] = useState(null);
   const [cardMounted, setCardMounted] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const cardInstanceRef = useRef(null);
+  const sessionIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
   const displayPrice = `${config.price} €`;
 
@@ -260,7 +260,7 @@ export default function Home() {
     };
   }, []);
 
-  // Load config on mount
+  // Load config and create checkout immediately on mount
   useEffect(() => {
     let cancelled = false;
 
@@ -269,14 +269,42 @@ export default function Home() {
         setLoading(true);
         setError(null);
 
+        // First fetch config to get the price
         const configRes = await fetch("/api/config", { cache: "no-store" });
+        let price = "84,00";
         if (configRes.ok) {
           const configData = await configRes.json();
+          price = configData?.price || "84,00";
           if (cancelled) return;
-          setConfig({
-            price: configData?.price || "84,00",
-          });
+          setConfig({ price });
         }
+
+        // Create tokenization checkout immediately with placeholder email
+        const amount = parseFloat(price.replace(",", ".")) || 84.0;
+        const placeholderEmail = `pending_${sessionIdRef.current}@placeholder.local`;
+
+        const res = await fetch("/api/checkout/tokenize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: placeholderEmail,
+            name: "",
+            amount,
+            currency: "EUR",
+            description: "Subscription payment",
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error("Tokenize error:", errData);
+          throw new Error(errData.error || "Failed to create checkout");
+        }
+
+        const data = await res.json();
+        if (cancelled) return;
+        setCheckoutId(data.checkoutId);
+        setCustomerId(data.customerId);
       } catch (e) {
         if (!cancelled) {
           setError(e.message);
@@ -292,56 +320,6 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
-
-  // Create tokenization checkout when email is valid
-  const createTokenizationCheckout = async () => {
-    if (!email || !email.includes("@")) return;
-
-    try {
-      setCardLoading(true);
-      setError(null);
-
-      // Unmount existing card if any
-      if (cardInstanceRef.current) {
-        try {
-          cardInstanceRef.current.unmount();
-        } catch (e) {
-          console.log("Failed to unmount previous card:", e);
-        }
-        cardInstanceRef.current = null;
-        setCardMounted(false);
-      }
-
-      const amount = parseFloat(config.price.replace(",", ".")) || 84.0;
-
-      // Create tokenization checkout (creates customer + checkout with mandate)
-      const res = await fetch("/api/checkout/tokenize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          name: "",
-          amount,
-          currency: "EUR",
-          description: "Subscription payment",
-        }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        console.error("Tokenize error:", errData);
-        throw new Error(errData.error || "Failed to create checkout");
-      }
-
-      const data = await res.json();
-      setCheckoutId(data.checkoutId);
-      setCustomerId(data.customerId);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setCardLoading(false);
-    }
-  };
 
   // Mount SumUp Card when checkout ID is available
   useEffect(() => {
@@ -371,6 +349,21 @@ export default function Home() {
             onResponse: async function (type, body) {
               console.log("SumUp response:", type, body);
               if (type === "success") {
+                // Get the email from the form
+                const emailInput = document.getElementById("email");
+                const customerEmail = emailInput?.value || "";
+
+                if (!customerEmail || !customerEmail.includes("@")) {
+                  if (typeof window !== "undefined" && window.Swal) {
+                    window.Swal.fire({
+                      icon: "warning",
+                      title: "Email required",
+                      text: "Please enter your email address.",
+                    });
+                  }
+                  return;
+                }
+
                 // Complete tokenization - save card and create subscription
                 try {
                   const amount = parseFloat(config.price.replace(",", ".")) || 84.0;
@@ -383,6 +376,7 @@ export default function Home() {
                       amount,
                       interval: "monthly",
                       intervalCount: 1,
+                      email: customerEmail,
                     }),
                   });
 
@@ -540,7 +534,6 @@ export default function Home() {
                       autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      onBlur={createTokenizationCheckout}
                     />
                   </div>
 
@@ -666,19 +659,11 @@ export default function Home() {
               <div className="if">
                 {loading ? (
                   <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>
-                    Loading...
+                    Loading payment form...
                   </div>
                 ) : error ? (
                   <div style={{ padding: 40, textAlign: "center", color: "#b42318" }}>
                     {error}
-                  </div>
-                ) : !email || !email.includes("@") ? (
-                  <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>
-                    Please enter your email to proceed with payment.
-                  </div>
-                ) : cardLoading ? (
-                  <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>
-                    Loading payment form...
                   </div>
                 ) : (
                   <div id="sumup-card" style={{ minHeight: 400 }}></div>

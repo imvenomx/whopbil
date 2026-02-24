@@ -40,7 +40,8 @@ export async function POST(request) {
       interval = "monthly",
       intervalCount = 1,
       checkoutPageId = null,
-      metadata = {}
+      metadata = {},
+      email = null,
     } = body;
 
     if (!checkoutId || !customerId) {
@@ -145,9 +146,14 @@ export async function POST(request) {
     const updatedInstruments = existingInstruments.map(i => ({ ...i, active: false }));
     updatedInstruments.push(paymentInstrument);
 
-    await updateCustomer(customerId, {
+    // Update customer with new payment instrument and real email if provided
+    const customerUpdate = {
       paymentInstruments: updatedInstruments,
-    });
+    };
+    if (email && email.includes("@") && !email.includes("@placeholder.local")) {
+      customerUpdate.email = email;
+    }
+    await updateCustomer(customerId, customerUpdate);
 
     // Create subscription
     const subscription = await addSubscription({
