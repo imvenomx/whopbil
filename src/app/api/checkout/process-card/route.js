@@ -250,6 +250,17 @@ export async function POST(request) {
       );
     }
 
+    // Check if 3D Secure is required
+    if (processData.next_step) {
+      return NextResponse.json({
+        success: false,
+        requires3DS: true,
+        checkoutId: checkoutData.id,
+        customerId: customer.id,
+        nextStep: processData.next_step,
+      });
+    }
+
     // Check if payment was successful
     const isSuccess = processData.status === "PAID";
 

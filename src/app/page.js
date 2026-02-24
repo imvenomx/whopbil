@@ -169,6 +169,11 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
+  // 3DS state
+  const [show3DS, setShow3DS] = useState(false);
+  const [threeDSUrl, setThreeDSUrl] = useState(null);
+  const [pendingCheckout, setPendingCheckout] = useState(null);
+
   // Form fields
   const [email, setEmail] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -217,6 +222,90 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
+
+  // Check payment status after 3DS
+  const checkPaymentStatus = async () => {
+    if (!pendingCheckout) return;
+
+    try {
+      const res = await fetch("/api/checkout/check-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          checkoutId: pendingCheckout.checkoutId,
+          customerId: pendingCheckout.customerId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.pending) {
+        // Still pending, keep polling
+        return false;
+      }
+
+      if (data.success) {
+        setShow3DS(false);
+        setPaymentSuccess(true);
+
+        // Create subscription
+        const amount = parseFloat(config.price.replace(",", ".")) || 84.0;
+        try {
+          await fetch("/api/checkout/complete-tokenization", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              checkoutId: pendingCheckout.checkoutId,
+              customerId: pendingCheckout.customerId,
+              amount,
+              interval: "monthly",
+              intervalCount: 1,
+              email,
+            }),
+          });
+        } catch (subErr) {
+          // Ignore subscription errors
+        }
+        return true;
+      } else {
+        setShow3DS(false);
+        setError(data.error || "Payment failed after 3DS");
+        return true;
+      }
+    } catch (err) {
+      setError(`Error checking status: ${err.message}`);
+      return true;
+    }
+  };
+
+  // Poll for 3DS completion
+  const handle3DSComplete = async () => {
+    setProcessing(true);
+
+    // Poll every 2 seconds for up to 2 minutes
+    let attempts = 0;
+    const maxAttempts = 60;
+
+    const poll = async () => {
+      const done = await checkPaymentStatus();
+      if (done) {
+        setProcessing(false);
+        return;
+      }
+
+      attempts++;
+      if (attempts < maxAttempts) {
+        setTimeout(poll, 2000);
+      } else {
+        setShow3DS(false);
+        setError("3DS verification timed out. Please try again.");
+        setProcessing(false);
+      }
+    };
+
+    // Start polling after a short delay
+    setTimeout(poll, 3000);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -284,6 +373,18 @@ export default function Home() {
       }
 
       if (!res.ok || !data.success) {
+        // Check if 3DS is required
+        if (data.requires3DS && data.nextStep) {
+          setPendingCheckout({
+            checkoutId: data.checkoutId,
+            customerId: data.customerId,
+          });
+          setThreeDSUrl(data.nextStep.url);
+          setShow3DS(true);
+          setProcessing(false);
+          return;
+        }
+
         // Show FULL error details in UI
         const fullError = JSON.stringify(data, null, 2);
         setError(`Error: ${data.error}\n\nFull response:\n${fullError}`);
@@ -316,6 +417,57 @@ export default function Home() {
       setProcessing(false);
     }
   };
+
+  // 3DS Modal
+  if (show3DS && threeDSUrl) {
+    return (
+      <main style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
+        <h2 style={{ marginBottom: 16, textAlign: "center" }}>Complete Verification</h2>
+        <p style={{ color: "#6d7175", marginBottom: 20, textAlign: "center" }}>
+          Please complete the 3D Secure verification in the window below.
+        </p>
+        <div style={{
+          border: "1px solid #e5e7eb",
+          borderRadius: 8,
+          overflow: "hidden",
+          marginBottom: 20,
+        }}>
+          <iframe
+            src={threeDSUrl}
+            style={{
+              width: "100%",
+              height: 500,
+              border: "none",
+            }}
+            title="3D Secure Verification"
+            onLoad={handle3DSComplete}
+          />
+        </div>
+        {processing && (
+          <p style={{ textAlign: "center", color: "#6d7175" }}>
+            Verifying payment status...
+          </p>
+        )}
+        <button
+          onClick={() => {
+            setShow3DS(false);
+            setError("3DS verification cancelled");
+          }}
+          style={{
+            width: "100%",
+            padding: "12px 20px",
+            backgroundColor: "#f3f4f6",
+            color: "#374151",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </main>
+    );
+  }
 
   if (paymentSuccess) {
     return (
