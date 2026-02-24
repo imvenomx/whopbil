@@ -174,6 +174,10 @@ export default function Home() {
   const [threeDSUrl, setThreeDSUrl] = useState(null);
   const [pendingCheckout, setPendingCheckout] = useState(null);
 
+  // Debug state
+  const [debugLog, setDebugLog] = useState([]);
+  const addDebug = (msg) => setDebugLog(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+
   // Form fields
   const [email, setEmail] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -330,9 +334,15 @@ export default function Home() {
     }
 
     setProcessing(true);
+    setDebugLog([]);
+
+    const log = (msg) => setDebugLog(prev => [...prev, msg]);
+    log("Step 1: Starting payment");
 
     try {
       const amount = parseFloat(config.price.replace(",", ".")) || 84.0;
+      log(`Step 2: Amount = ${amount}`);
+
       // Split expiry and handle both "MM / YY" and "MMYY" formats
       let expiryMonth, expiryYear;
       if (cardExpiry.includes("/")) {
@@ -341,6 +351,7 @@ export default function Home() {
         expiryMonth = cardExpiry.substring(0, 2);
         expiryYear = cardExpiry.substring(2, 4);
       }
+      log(`Step 3: Expiry = ${expiryMonth}/${expiryYear}`);
 
       const requestBody = {
         email: email.trim(),
@@ -356,6 +367,7 @@ export default function Home() {
           name: cardName.trim(),
         },
       };
+      log("Step 4: Sending request...");
 
       const res = await fetch("/api/checkout/process-card", {
         method: "POST",
@@ -363,17 +375,23 @@ export default function Home() {
         body: JSON.stringify(requestBody),
       });
 
+      log(`Step 5: Response status = ${res.status}`);
       const responseText = await res.text();
+      log(`Step 6: Response text = ${responseText}`);
+
       let data;
       try {
         data = JSON.parse(responseText);
+        log(`Step 7: Parsed JSON, keys = ${Object.keys(data).join(", ")}`);
       } catch (parseErr) {
-        setError(`Server error: ${responseText.substring(0, 200)}`);
+        log(`Step 7 ERROR: JSON parse failed`);
+        setError(`Server error: ${responseText.substring(0, 500)}`);
         return;
       }
 
       // Check if 3DS is required (can come with success:false or in the response)
       if (data.requires3DS && data.nextStep) {
+        log("Step 8: 3DS required, showing iframe");
         setPendingCheckout({
           checkoutId: data.checkoutId,
           customerId: data.customerId,
@@ -385,13 +403,13 @@ export default function Home() {
       }
 
       if (!res.ok || !data.success) {
+        log(`Step 8: Payment failed - ${data.error}`);
         // Show FULL error details in UI
-        const fullError = JSON.stringify(data, null, 2);
-        setError(`Error: ${data.error || "Unknown error"}\n\nFull response:\n${fullError}`);
+        setError(`FULL API RESPONSE:\n${responseText}`);
         return;
       }
 
-      // Payment successful
+      log("Step 8: Payment successful!");
       setPaymentSuccess(true);
 
       // Create subscription
@@ -612,6 +630,25 @@ export default function Home() {
                 ) : (
                   <form onSubmit={handleSubmit} style={{ padding: 20 }}>
                     <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 600 }}>Payment Details</h3>
+
+                    {/* Debug Log */}
+                    {debugLog.length > 0 && (
+                      <div style={{
+                        background: "#f0f9ff",
+                        border: "1px solid #bae6fd",
+                        borderRadius: 8,
+                        padding: 12,
+                        marginBottom: 16,
+                        fontSize: 11,
+                        maxHeight: 200,
+                        overflow: "auto",
+                      }}>
+                        <strong>Debug Log:</strong>
+                        <pre style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                          {debugLog.join("\n")}
+                        </pre>
+                      </div>
+                    )}
 
                     {error && (
                       <div style={{
