@@ -260,6 +260,8 @@ export default function Home() {
         cvvLength: cardCvv.length,
       });
 
+      console.log("Making payment request...");
+
       const res = await fetch("/api/checkout/process-card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -279,7 +281,18 @@ export default function Home() {
         }),
       });
 
-      const data = await res.json();
+      console.log("Response status:", res.status);
+      const responseText = await res.text();
+      console.log("Response body:", responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse response:", responseText);
+        throw new Error("Invalid response from server");
+      }
+
       console.log("Payment response:", data);
 
       if (!res.ok || !data.success) {
@@ -318,7 +331,8 @@ export default function Home() {
         console.error("Failed to create subscription:", subErr);
       }
     } catch (err) {
-      setError(err.message);
+      console.error("Payment error:", err);
+      setError(err.message || "Payment failed - check console for details");
     } finally {
       setProcessing(false);
     }
