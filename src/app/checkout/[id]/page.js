@@ -150,6 +150,14 @@ export default function CheckoutPage() {
   const [notFound, setNotFound] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
+  // 3DS state
+  const [show3DS, setShow3DS] = useState(false);
+  const [threeDSUrl, setThreeDSUrl] = useState(null);
+  const [pendingCheckout, setPendingCheckout] = useState(null);
+
+  // Debug state
+  const [debugLog, setDebugLog] = useState([]);
+
   // Form fields
   const [email, setEmail] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -200,9 +208,88 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, [pageId]);
 
+  // Check payment status after 3DS
+  const checkPaymentStatus = async () => {
+    if (!pendingCheckout) return;
+
+    try {
+      const res = await fetch("/api/checkout/check-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          checkoutId: pendingCheckout.checkoutId,
+          customerId: pendingCheckout.customerId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.pending) {
+        return false;
+      }
+
+      if (data.success) {
+        setShow3DS(false);
+        setPaymentSuccess(true);
+
+        const amount = parseFloat(pageConfig.price.replace(",", ".")) || 84.0;
+        try {
+          await fetch("/api/checkout/complete-tokenization", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              checkoutId: pendingCheckout.checkoutId,
+              customerId: pendingCheckout.customerId,
+              amount,
+              interval: pageConfig.interval || "monthly",
+              intervalCount: pageConfig.intervalCount || 1,
+              checkoutPageId: pageId,
+              email,
+            }),
+          });
+        } catch (subErr) {}
+        return true;
+      } else {
+        setShow3DS(false);
+        setError(data.error || "Payment failed after 3DS");
+        return true;
+      }
+    } catch (err) {
+      setError(`Error checking status: ${err.message}`);
+      return true;
+    }
+  };
+
+  const handle3DSComplete = async () => {
+    setProcessing(true);
+    let attempts = 0;
+    const maxAttempts = 60;
+
+    const poll = async () => {
+      const done = await checkPaymentStatus();
+      if (done) {
+        setProcessing(false);
+        return;
+      }
+      attempts++;
+      if (attempts < maxAttempts) {
+        setTimeout(poll, 2000);
+      } else {
+        setShow3DS(false);
+        setError("3DS verification timed out. Please try again.");
+        setProcessing(false);
+      }
+    };
+    setTimeout(poll, 3000);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setDebugLog([]);
+
+    const log = (msg) => setDebugLog(prev => [...prev, msg]);
+    log("Step 1: Starting payment");
 
     if (!email || !email.includes("@")) {
       setError("Please enter a valid email address");
@@ -225,37 +312,78 @@ export default function CheckoutPage() {
 
     try {
       const amount = parseFloat(pageConfig.price.replace(",", ".")) || 84.0;
-      const [expiryMonth, expiryYear] = cardExpiry.split(" / ");
+      log(`Step 2: Amount = ${amount}`);
+
+      let expiryMonth, expiryYear;
+      if (cardExpiry.includes("/")) {
+        [expiryMonth, expiryYear] = cardExpiry.split("/").map(s => s.trim());
+      } else {
+        expiryMonth = cardExpiry.substring(0, 2);
+        expiryYear = cardExpiry.substring(2, 4);
+      }
+      log(`Step 3: Expiry = ${expiryMonth}/${expiryYear}`);
+
+      const requestBody = {
+        email: email.trim(),
+        name: cardName.trim(),
+        amount,
+        currency: "EUR",
+        description: pageConfig.productName || "Subscription payment",
+        card: {
+          number: cardNumber.replace(/\s/g, ""),
+          expiry_month: expiryMonth,
+          expiry_year: expiryYear,
+          cvv: cardCvv.trim(),
+          name: cardName.trim(),
+        },
+      };
+      log("Step 4: Sending request...");
 
       const res = await fetch("/api/checkout/process-card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          name: cardName,
-          amount,
-          currency: "EUR",
-          description: pageConfig.productName || "Subscription payment",
-          card: {
-            number: cardNumber.replace(/\s/g, ""),
-            expiry_month: expiryMonth,
-            expiry_year: expiryYear,
-            cvv: cardCvv,
-            name: cardName,
-          },
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      const data = await res.json();
+      log(`Step 5: Response status = ${res.status}`);
+      const responseText = await res.text();
+      log(`Step 6: Response = ${responseText}`);
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Payment failed");
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        log(`Step 7: Parsed, keys = ${Object.keys(data).join(", ")}`);
+      } catch (parseErr) {
+        log("Step 7 ERROR: JSON parse failed");
+        setError(`Server error: ${responseText.substring(0, 500)}`);
+        return;
       }
 
+      // Check if 3DS is required
+      if (data.requires3DS && data.nextStep) {
+        log("Step 8: 3DS required, showing iframe");
+        setPendingCheckout({
+          checkoutId: data.checkoutId,
+          customerId: data.customerId,
+        });
+        setThreeDSUrl(data.nextStep.url);
+        setShow3DS(true);
+        setProcessing(false);
+        return;
+      }
+
+      if (!res.ok || !data.success) {
+        log(`Step 8: Payment failed - ${data.error}`);
+        setError(`FULL API RESPONSE:\n${responseText}`);
+        return;
+      }
+
+      log("Step 8: Payment successful!");
       setPaymentSuccess(true);
 
       // Create subscription
       try {
+        log("Creating subscription...");
         await fetch("/api/checkout/complete-tokenization", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -272,11 +400,10 @@ export default function CheckoutPage() {
             },
           }),
         });
-      } catch (subErr) {
-        console.error("Failed to create subscription:", subErr);
-      }
+      } catch (subErr) {}
     } catch (err) {
-      setError(err.message);
+      log(`Exception: ${err.message}`);
+      setError(`Exception: ${err.message}`);
     } finally {
       setProcessing(false);
     }
@@ -287,6 +414,33 @@ export default function CheckoutPage() {
       <main style={{ padding: 40, textAlign: "center" }}>
         <h1>Checkout Not Found</h1>
         <p>The checkout page you're looking for doesn't exist.</p>
+      </main>
+    );
+  }
+
+  // 3DS Modal
+  if (show3DS && threeDSUrl) {
+    return (
+      <main style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
+        <h2 style={{ marginBottom: 16, textAlign: "center" }}>Complete Verification</h2>
+        <p style={{ color: "#6d7175", marginBottom: 20, textAlign: "center" }}>
+          Please complete the 3D Secure verification below.
+        </p>
+        <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden", marginBottom: 20 }}>
+          <iframe
+            src={threeDSUrl}
+            style={{ width: "100%", height: 500, border: "none" }}
+            title="3D Secure Verification"
+            onLoad={handle3DSComplete}
+          />
+        </div>
+        {processing && <p style={{ textAlign: "center", color: "#6d7175" }}>Verifying payment status...</p>}
+        <button
+          onClick={() => { setShow3DS(false); setError("3DS verification cancelled"); }}
+          style={{ width: "100%", padding: "12px 20px", backgroundColor: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, cursor: "pointer" }}
+        >
+          Cancel
+        </button>
       </main>
     );
   }
@@ -428,7 +582,26 @@ export default function CheckoutPage() {
                   <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>Loading...</div>
                 ) : (
                   <form onSubmit={handleSubmit} style={{ padding: 20 }}>
-                    <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 600 }}>Payment Details</h3>
+                    <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 600 }}>Payment Details <span style={{fontSize: 10, color: "#999"}}>(v4)</span></h3>
+
+                    {/* Debug Log */}
+                    {debugLog.length > 0 && (
+                      <div style={{
+                        background: "#f0f9ff",
+                        border: "1px solid #bae6fd",
+                        borderRadius: 8,
+                        padding: 12,
+                        marginBottom: 16,
+                        fontSize: 11,
+                        maxHeight: 200,
+                        overflow: "auto",
+                      }}>
+                        <strong>Debug Log:</strong>
+                        <pre style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                          {debugLog.join("\n")}
+                        </pre>
+                      </div>
+                    )}
 
                     {error && (
                       <div style={{
@@ -438,9 +611,11 @@ export default function CheckoutPage() {
                         padding: 12,
                         marginBottom: 16,
                         color: "#991b1b",
-                        fontSize: 14,
+                        fontSize: 12,
+                        maxHeight: 300,
+                        overflow: "auto",
                       }}>
-                        {error}
+                        <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{error}</pre>
                       </div>
                     )}
 
