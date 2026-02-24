@@ -62,14 +62,13 @@ export async function POST(request) {
       );
     }
 
-    // Create checkout with token for recurring payment
+    // Create checkout for recurring payment
     const checkoutPayload = {
       checkout_reference: `sub_${Date.now()}`,
       amount: parseFloat(amount),
       currency,
+      merchant_code: config.merchantCode,
       description,
-      customer_id: customer.sumupCustomerId,
-      payment_type: "recurring",
     };
 
     console.log("[POST /api/checkout/charge-token] Creating checkout:", checkoutPayload);
@@ -95,9 +94,11 @@ export async function POST(request) {
     const checkoutData = await checkoutResponse.json();
     console.log("[POST /api/checkout/charge-token] Checkout created:", checkoutData.id);
 
-    // Now process the checkout with the token
+    // Process the checkout with the saved token
+    // Per SumUp docs: token and customer_id are required for recurring payments
     const processPayload = {
       payment_type: "card",
+      installments: 1,
       token: token,
       customer_id: customer.sumupCustomerId,
     };

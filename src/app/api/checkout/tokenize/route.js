@@ -4,7 +4,7 @@ import { readConfig, getCustomerByEmail, addCustomer } from "@/lib/configStore";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Create a tokenization checkout (for saving card with mandate)
+// Create a tokenization checkout (for saving card with SETUP_RECURRING_PAYMENT)
 export async function POST(request) {
   try {
     const config = await readConfig();
@@ -12,6 +12,13 @@ export async function POST(request) {
     if (!config.apiKey) {
       return NextResponse.json(
         { error: "No SumUp API key configured" },
+        { status: 500 }
+      );
+    }
+
+    if (!config.merchantCode) {
+      return NextResponse.json(
+        { error: "No SumUp merchant code configured" },
         { status: 500 }
       );
     }
@@ -47,6 +54,7 @@ export async function POST(request) {
 
     if (!customer) {
       // Create customer in SumUp
+      const customerId = `cust_${Date.now()}`;
       const sumupCustomerResponse = await fetch("https://api.sumup.com/v0.1/customers", {
         method: "POST",
         headers: {
@@ -54,7 +62,7 @@ export async function POST(request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          customer_id: `cust_${Date.now()}`,
+          customer_id: customerId,
           personal_details: {
             email,
             first_name: name || "",
@@ -89,22 +97,21 @@ export async function POST(request) {
       });
     }
 
-    // Try to create checkout with mandate for tokenization
-    let checkoutPayload = {
+    // Create checkout with purpose SETUP_RECURRING_PAYMENT for tokenization
+    // Per SumUp docs: this processes an authorization charge that is instantly reimbursed
+    const checkoutPayload = {
       checkout_reference: `token_${Date.now()}`,
       amount: parseFloat(amount),
       currency,
+      merchant_code: config.merchantCode,
       description,
       customer_id: customer.sumupCustomerId,
-      mandate: {
-        type: "recurrent",
-        merchant_code: config.merchantCode,
-      },
+      purpose: "SETUP_RECURRING_PAYMENT",
     };
 
-    console.log("[POST /api/checkout/tokenize] Creating checkout with mandate:", checkoutPayload);
+    console.log("[POST /api/checkout/tokenize] Creating checkout with payload:", checkoutPayload);
 
-    let checkoutResponse = await fetch("https://api.sumup.com/v0.1/checkouts", {
+    const checkoutResponse = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${config.apiKey}`,
@@ -113,53 +120,23 @@ export async function POST(request) {
       body: JSON.stringify(checkoutPayload),
     });
 
-    let tokenizationEnabled = true;
-
-    // If mandate checkout fails, try regular checkout (without tokenization)
     if (!checkoutResponse.ok) {
       const errorText = await checkoutResponse.text();
-      console.warn("[POST /api/checkout/tokenize] Mandate checkout failed, trying regular checkout:", errorText);
-
-      tokenizationEnabled = false;
-
-      // Fallback to regular checkout without mandate
-      checkoutPayload = {
-        checkout_reference: `checkout_${Date.now()}`,
-        amount: parseFloat(amount),
-        currency,
-        description,
-        merchant_code: config.merchantCode,
-      };
-
-      console.log("[POST /api/checkout/tokenize] Creating regular checkout:", checkoutPayload);
-
-      checkoutResponse = await fetch("https://api.sumup.com/v0.1/checkouts", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${config.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(checkoutPayload),
-      });
-
-      if (!checkoutResponse.ok) {
-        const fallbackErrorText = await checkoutResponse.text();
-        console.error("[POST /api/checkout/tokenize] Regular checkout also failed:", fallbackErrorText);
-        let errorData;
-        try {
-          errorData = JSON.parse(fallbackErrorText);
-        } catch {
-          errorData = { raw: fallbackErrorText };
-        }
-        return NextResponse.json(
-          { error: `Failed to create checkout: ${errorData.message || errorData.error_code || fallbackErrorText}`, details: errorData },
-          { status: checkoutResponse.status }
-        );
+      console.error("[POST /api/checkout/tokenize] SumUp checkout creation error:", checkoutResponse.status, errorText);
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { raw: errorText };
       }
+      return NextResponse.json(
+        { error: `Failed to create checkout: ${errorData.message || errorData.error_code || errorText}`, details: errorData },
+        { status: checkoutResponse.status }
+      );
     }
 
     const checkoutData = await checkoutResponse.json();
-    console.log("[POST /api/checkout/tokenize] Checkout created:", checkoutData, "tokenization:", tokenizationEnabled);
+    console.log("[POST /api/checkout/tokenize] Checkout created:", checkoutData);
 
     return NextResponse.json({
       checkoutId: checkoutData.id,
@@ -168,7 +145,6 @@ export async function POST(request) {
       amount: checkoutData.amount,
       currency: checkoutData.currency,
       status: checkoutData.status,
-      tokenizationEnabled,
     });
   } catch (e) {
     console.error("[POST /api/checkout/tokenize] error:", e);
