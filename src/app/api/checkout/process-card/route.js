@@ -72,8 +72,8 @@ export async function POST(request) {
     let customer = await getCustomerByEmail(email);
 
     if (!customer) {
-      // Create customer in SumUp
-      const customerId = `cust_${Date.now()}`;
+      // Create customer in SumUp - use email-based ID (alphanumeric only)
+      const customerId = email.replace(/[^a-zA-Z0-9]/g, "").substring(0, 20) + Date.now();
       const sumupCustomerResponse = await fetch("https://api.sumup.com/v0.1/customers", {
         method: "POST",
         headers: {
@@ -116,15 +116,17 @@ export async function POST(request) {
       });
     }
 
-    // Create checkout - use regular checkout, mandate is added at processing step
-    // Note: customer_id is optional for checkout, we link via mandate instead
+    // Create checkout with customer_id for mandate/tokenization
     const checkoutPayload = {
       checkout_reference: `card_${Date.now()}`,
       amount: parseFloat(amount),
       currency,
       merchant_code: config.merchantCode,
       description,
+      customer_id: customer.sumupCustomerId,
     };
+
+    console.log("[process-card] Using customer_id:", customer.sumupCustomerId);
 
     console.log("[process-card] Creating checkout:", checkoutPayload);
 
