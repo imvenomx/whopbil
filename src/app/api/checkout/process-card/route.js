@@ -116,6 +116,9 @@ export async function POST(request) {
       });
     }
 
+    // Get the origin for redirect URL
+    const origin = request.headers.get("origin") || request.headers.get("referer")?.split("/").slice(0, 3).join("/") || "";
+
     // Create checkout with customer_id for mandate/tokenization
     const checkoutPayload = {
       checkout_reference: `card_${Date.now()}`,
@@ -126,7 +129,13 @@ export async function POST(request) {
       customer_id: customer.sumupCustomerId,
     };
 
+    // Add redirect_url if we have origin
+    if (origin) {
+      checkoutPayload.redirect_url = `${origin}/api/checkout/3ds-complete`;
+    }
+
     console.log("[process-card] Using customer_id:", customer.sumupCustomerId);
+    console.log("[process-card] Redirect URL:", checkoutPayload.redirect_url);
 
     console.log("[process-card] Creating checkout:", checkoutPayload);
 
