@@ -253,61 +253,41 @@ export default function Home() {
         expiryYear = cardExpiry.substring(2, 4);
       }
 
-      console.log("Sending card data:", {
-        expiryMonth,
-        expiryYear,
-        cardNumberLength: cardNumber.replace(/\s/g, "").length,
-        cvvLength: cardCvv.length,
-      });
-
-      console.log("Making payment request...");
+      const requestBody = {
+        email: email.trim(),
+        name: cardName.trim(),
+        amount,
+        currency: "EUR",
+        description: "Subscription payment",
+        card: {
+          number: cardNumber.replace(/\s/g, ""),
+          expiry_month: expiryMonth,
+          expiry_year: expiryYear,
+          cvv: cardCvv.trim(),
+          name: cardName.trim(),
+        },
+      };
 
       const res = await fetch("/api/checkout/process-card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          name: cardName.trim(),
-          amount,
-          currency: "EUR",
-          description: "Subscription payment",
-          card: {
-            number: cardNumber.replace(/\s/g, ""),
-            expiry_month: expiryMonth,
-            expiry_year: expiryYear,
-            cvv: cardCvv.trim(),
-            name: cardName.trim(),
-          },
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      console.log("Response status:", res.status);
       const responseText = await res.text();
-      console.log("Response body:", responseText);
-
       let data;
       try {
         data = JSON.parse(responseText);
-      } catch (e) {
-        console.error("Failed to parse response:", responseText);
-        throw new Error("Invalid response from server");
+      } catch (parseErr) {
+        setError(`Server error: ${responseText.substring(0, 200)}`);
+        return;
       }
 
-      console.log("Payment response:", data);
-
       if (!res.ok || !data.success) {
-        // Show detailed error including any details from SumUp
-        let errorMsg = data.error || "Payment failed";
-        if (data.details) {
-          console.error("Payment error details:", data.details);
-          // Try to extract more specific error info
-          if (data.details.error_code) errorMsg += ` (${data.details.error_code})`;
-          if (data.details.param) errorMsg += ` - field: ${data.details.param}`;
-          if (data.details.message && data.details.message !== data.error) {
-            errorMsg += `: ${data.details.message}`;
-          }
-        }
-        throw new Error(errorMsg);
+        // Show FULL error details in UI
+        const fullError = JSON.stringify(data, null, 2);
+        setError(`Error: ${data.error}\n\nFull response:\n${fullError}`);
+        return;
       }
 
       // Payment successful
@@ -328,11 +308,10 @@ export default function Home() {
           }),
         });
       } catch (subErr) {
-        console.error("Failed to create subscription:", subErr);
+        // Ignore subscription errors for now
       }
     } catch (err) {
-      console.error("Payment error:", err);
-      setError(err.message || "Payment failed - check console for details");
+      setError(`Exception: ${err.message}`);
     } finally {
       setProcessing(false);
     }
@@ -490,9 +469,11 @@ export default function Home() {
                         padding: 12,
                         marginBottom: 16,
                         color: "#991b1b",
-                        fontSize: 14,
+                        fontSize: 12,
+                        maxHeight: 300,
+                        overflow: "auto",
                       }}>
-                        {error}
+                        <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{error}</pre>
                       </div>
                     )}
 
