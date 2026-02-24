@@ -17,6 +17,8 @@ export default function SubscriptionsPage() {
   const [processingBilling, setProcessingBilling] = useState(false);
   const [billingResult, setBillingResult] = useState(null);
   const [chargeAmount, setChargeAmount] = useState("");
+  const [chargingId, setChargingId] = useState(null);
+  const [chargeError, setChargeError] = useState(null);
 
   async function loadSubscriptions() {
     setLoading(true);
@@ -54,6 +56,58 @@ export default function SubscriptionsPage() {
       await loadSubscriptions();
     } catch (e) {
       alert(`Error: ${e.message}`);
+    }
+  }
+
+  // Charge a single subscription
+  async function handleChargeSingle(sub) {
+    const amount = prompt(`Enter amount to charge ${sub.customer?.email || "customer"} (EUR):`, sub.amount || "10");
+    if (!amount) return;
+
+    const amountNum = parseFloat(amount.replace(",", "."));
+    if (!amountNum || amountNum <= 0) {
+      alert("Invalid amount");
+      return;
+    }
+
+    setChargingId(sub.id);
+    setChargeError(null);
+
+    try {
+      // Get the active token for this customer
+      const token = sub.customer?.paymentInstruments?.find(i => i.active)?.token;
+
+      if (!token) {
+        throw new Error("No active payment method found for this customer");
+      }
+
+      const res = await fetch("/api/checkout/charge-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId: sub.customerId,
+          token,
+          amount: amountNum,
+          currency: "EUR",
+          description: `Subscription charge - ${sub.customer?.email || ""}`,
+        }),
+      });
+
+      const data = await res.json();
+      console.log("Charge response:", data);
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Payment failed: ${JSON.stringify(data)}`);
+      }
+
+      alert(`Successfully charged ${amountNum} EUR!`);
+      await loadSubscriptions();
+    } catch (e) {
+      console.error("Charge error:", e);
+      setChargeError({ id: sub.id, message: e.message });
+      alert(`Charge failed: ${e.message}`);
+    } finally {
+      setChargingId(null);
     }
   }
 
@@ -354,6 +408,25 @@ export default function SubscriptionsPage() {
                       </td>
                       <td style={{ padding: 12 }}>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {/* Charge Button */}
+                          {sub.status !== "cancelled" && sub.customer?.paymentInstruments?.some(i => i.active) && (
+                            <button
+                              onClick={() => handleChargeSingle(sub)}
+                              disabled={chargingId === sub.id}
+                              style={{
+                                padding: "4px 10px",
+                                fontSize: 12,
+                                backgroundColor: chargingId === sub.id ? "#e5e7eb" : "#3b82f6",
+                                color: chargingId === sub.id ? "#9ca3af" : "#fff",
+                                border: "none",
+                                borderRadius: 4,
+                                cursor: chargingId === sub.id ? "not-allowed" : "pointer",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {chargingId === sub.id ? "Charging..." : "Charge"}
+                            </button>
+                          )}
                           {sub.status === "active" && (
                             <button
                               onClick={() => handleStatusChange(sub.id, "paused")}
@@ -419,6 +492,11 @@ export default function SubscriptionsPage() {
                             </button>
                           )}
                         </div>
+                        {chargeError?.id === sub.id && (
+                          <div style={{ fontSize: 11, color: "#991b1b", marginTop: 4 }}>
+                            {chargeError.message}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

@@ -24,7 +24,7 @@ export async function GET(request) {
     const subscriptions = await getSubscriptions();
     const customers = await getCustomers();
 
-    // Enrich subscriptions with customer data
+    // Enrich subscriptions with customer data including payment instruments
     const enrichedSubscriptions = subscriptions.map((sub) => {
       const customer = customers.find((c) => c.id === sub.customerId);
       return {
@@ -34,6 +34,8 @@ export async function GET(request) {
               id: customer.id,
               email: customer.email,
               name: customer.name,
+              sumupCustomerId: customer.sumupCustomerId,
+              paymentInstruments: customer.paymentInstruments || [],
             }
           : null,
       };

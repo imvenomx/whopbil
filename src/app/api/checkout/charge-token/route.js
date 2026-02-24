@@ -62,16 +62,19 @@ export async function POST(request) {
       );
     }
 
-    // Create checkout for recurring payment
+    // Create checkout for recurring payment with customer_id
     const checkoutPayload = {
       checkout_reference: `sub_${Date.now()}`,
       amount: parseFloat(amount),
       currency,
       merchant_code: config.merchantCode,
       description,
+      customer_id: customer.sumupCustomerId,
     };
 
-    console.log("[POST /api/checkout/charge-token] Creating checkout:", checkoutPayload);
+    console.log("[charge-token] Creating checkout:", JSON.stringify(checkoutPayload, null, 2));
+    console.log("[charge-token] Customer sumupCustomerId:", customer.sumupCustomerId);
+    console.log("[charge-token] Token:", token);
 
     const checkoutResponse = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
@@ -82,28 +85,37 @@ export async function POST(request) {
       body: JSON.stringify(checkoutPayload),
     });
 
+    const checkoutText = await checkoutResponse.text();
+    let checkoutData;
+    try {
+      checkoutData = JSON.parse(checkoutText);
+    } catch {
+      checkoutData = { raw: checkoutText };
+    }
+
     if (!checkoutResponse.ok) {
-      const errorData = await checkoutResponse.json().catch(() => ({}));
-      console.error("[POST /api/checkout/charge-token] Checkout creation error:", errorData);
+      console.error("[charge-token] Checkout creation error:", checkoutResponse.status, checkoutData);
       return NextResponse.json(
-        { error: "Failed to create checkout", details: errorData },
+        {
+          error: `Failed to create checkout: ${checkoutData.message || checkoutData.error_code || "Unknown error"}`,
+          details: checkoutData,
+          step: "checkout_creation",
+        },
         { status: checkoutResponse.status }
       );
     }
 
-    const checkoutData = await checkoutResponse.json();
-    console.log("[POST /api/checkout/charge-token] Checkout created:", checkoutData.id);
+    console.log("[charge-token] Checkout created:", checkoutData.id);
 
     // Process the checkout with the saved token
     // Per SumUp docs: token and customer_id are required for recurring payments
     const processPayload = {
       payment_type: "card",
-      installments: 1,
       token: token,
       customer_id: customer.sumupCustomerId,
     };
 
-    console.log("[POST /api/checkout/charge-token] Processing checkout with token");
+    console.log("[charge-token] Processing with payload:", JSON.stringify(processPayload, null, 2));
 
     const processResponse = await fetch(
       `https://api.sumup.com/v0.1/checkouts/${checkoutData.id}`,
@@ -117,21 +129,27 @@ export async function POST(request) {
       }
     );
 
+    const processText = await processResponse.text();
+    let processData;
+    try {
+      processData = JSON.parse(processText);
+    } catch {
+      processData = { raw: processText };
+    }
+
+    console.log("[charge-token] Process response:", processResponse.status, JSON.stringify(processData, null, 2));
+
     if (!processResponse.ok) {
-      const errorData = await processResponse.json().catch(() => ({}));
-      console.error("[POST /api/checkout/charge-token] Process error:", errorData);
       return NextResponse.json(
         {
-          error: "Failed to process payment",
-          details: errorData,
+          error: `Failed to process payment: ${processData.message || processData.error_code || "Unknown error"}`,
+          details: processData,
           checkoutId: checkoutData.id,
+          step: "payment_processing",
         },
         { status: processResponse.status }
       );
     }
-
-    const processData = await processResponse.json();
-    console.log("[POST /api/checkout/charge-token] Payment result:", processData);
 
     // Check if payment was successful
     const isSuccess = processData.status === "PAID";
