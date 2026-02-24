@@ -329,6 +329,7 @@ export default function Home() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        console.error("Tokenize error:", errData);
         throw new Error(errData.error || "Failed to create checkout");
       }
 

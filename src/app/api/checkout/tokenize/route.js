@@ -63,10 +63,16 @@ export async function POST(request) {
       });
 
       if (!sumupCustomerResponse.ok) {
-        const errorData = await sumupCustomerResponse.json().catch(() => ({}));
-        console.error("[POST /api/checkout/tokenize] SumUp customer creation error:", errorData);
+        const errorText = await sumupCustomerResponse.text();
+        console.error("[POST /api/checkout/tokenize] SumUp customer creation error:", sumupCustomerResponse.status, errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { raw: errorText };
+        }
         return NextResponse.json(
-          { error: "Failed to create customer", details: errorData },
+          { error: `Failed to create customer: ${errorData.message || errorData.error_code || errorText}`, details: errorData },
           { status: sumupCustomerResponse.status }
         );
       }
@@ -109,10 +115,16 @@ export async function POST(request) {
     });
 
     if (!checkoutResponse.ok) {
-      const errorData = await checkoutResponse.json().catch(() => ({}));
-      console.error("[POST /api/checkout/tokenize] SumUp checkout creation error:", errorData);
+      const errorText = await checkoutResponse.text();
+      console.error("[POST /api/checkout/tokenize] SumUp checkout creation error:", checkoutResponse.status, errorText);
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { raw: errorText };
+      }
       return NextResponse.json(
-        { error: "Failed to create tokenization checkout", details: errorData },
+        { error: `Failed to create checkout: ${errorData.message || errorData.error_code || errorText}`, details: errorData },
         { status: checkoutResponse.status }
       );
     }
