@@ -55,6 +55,8 @@ export async function POST(request) {
       price: body.price,
       productName: body.productName,
       productImage: body.productImage,
+      interval: body.interval || "monthly",
+      intervalCount: parseInt(body.intervalCount, 10) || 1,
     });
 
     return NextResponse.json({ ok: true, page });
@@ -91,6 +93,8 @@ export async function PUT(request) {
       price: body.price,
       productName: body.productName,
       productImage: body.productImage,
+      interval: body.interval,
+      intervalCount: body.intervalCount ? parseInt(body.intervalCount, 10) : undefined,
     });
 
     return NextResponse.json({ ok: true, page });

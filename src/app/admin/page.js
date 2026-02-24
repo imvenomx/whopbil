@@ -216,6 +216,29 @@ export default function AdminPage() {
                 </div>
               </div>
             </Link>
+
+            <Link href="/admin/subscriptions" style={{ textDecoration: "none", color: "inherit" }}>
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid #e1e3e5",
+                  borderRadius: 12,
+                  padding: 20,
+                  cursor: "pointer",
+                  transition: "box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+              >
+                <div style={{ fontSize: 24, marginBottom: 8 }}>
+                  <span role="img" aria-label="subscriptions">&#128257;</span>
+                </div>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Subscriptions</div>
+                <div style={{ fontSize: 13, color: "#6d7175" }}>
+                  Manage recurring payments and billing
+                </div>
+              </div>
+            </Link>
           </div>
 
           <div style={{ marginTop: 24, color: "#6d7175", fontSize: 13 }}>

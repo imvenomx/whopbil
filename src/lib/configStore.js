@@ -174,6 +174,8 @@ export async function addCheckoutPage(page) {
     price: normalizePrice(page.price),
     productName: page.productName || "Product",
     productImage: page.productImage || "",
+    interval: page.interval || "monthly",
+    intervalCount: page.intervalCount || 1,
     createdAt: new Date().toISOString(),
   };
   pages.push(newPage);
@@ -259,4 +261,230 @@ export async function writeConfig(nextConfig) {
 
   await kv.set("checkout-config", JSON.stringify(normalized));
   return normalized;
+}
+
+// ==================== CUSTOMERS ====================
+
+export async function getCustomers() {
+  try {
+    const raw = await kv.get("sumup-customers");
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error("[getCustomers] error:", e);
+    return [];
+  }
+}
+
+export async function saveCustomers(customers) {
+  try {
+    await kv.set("sumup-customers", JSON.stringify(customers));
+    return customers;
+  } catch (e) {
+    console.error("[saveCustomers] error:", e);
+    throw e;
+  }
+}
+
+export async function addCustomer(customer) {
+  const customers = await getCustomers();
+  const newCustomer = {
+    id: Date.now().toString(),
+    sumupCustomerId: customer.sumupCustomerId || "",
+    email: customer.email || "",
+    name: customer.name || "",
+    createdAt: new Date().toISOString(),
+    paymentInstruments: customer.paymentInstruments || [],
+  };
+  customers.push(newCustomer);
+  await saveCustomers(customers);
+  return newCustomer;
+}
+
+export async function updateCustomer(id, updates) {
+  const customers = await getCustomers();
+  const index = customers.findIndex((c) => c.id === id);
+  if (index === -1) throw new Error("Customer not found");
+  customers[index] = { ...customers[index], ...updates };
+  await saveCustomers(customers);
+  return customers[index];
+}
+
+export async function deleteCustomer(id) {
+  const customers = await getCustomers();
+  const filtered = customers.filter((c) => c.id !== id);
+  await saveCustomers(filtered);
+  return filtered;
+}
+
+export async function getCustomerByEmail(email) {
+  const customers = await getCustomers();
+  return customers.find((c) => c.email.toLowerCase() === email.toLowerCase()) || null;
+}
+
+export async function getCustomerBySumupId(sumupCustomerId) {
+  const customers = await getCustomers();
+  return customers.find((c) => c.sumupCustomerId === sumupCustomerId) || null;
+}
+
+export async function getCustomerById(id) {
+  const customers = await getCustomers();
+  return customers.find((c) => c.id === id) || null;
+}
+
+// ==================== SUBSCRIPTIONS ====================
+
+export async function getSubscriptions() {
+  try {
+    const raw = await kv.get("sumup-subscriptions");
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error("[getSubscriptions] error:", e);
+    return [];
+  }
+}
+
+export async function saveSubscriptions(subscriptions) {
+  try {
+    await kv.set("sumup-subscriptions", JSON.stringify(subscriptions));
+    return subscriptions;
+  } catch (e) {
+    console.error("[saveSubscriptions] error:", e);
+    throw e;
+  }
+}
+
+export async function addSubscription(subscription) {
+  const subscriptions = await getSubscriptions();
+  const newSubscription = {
+    id: Date.now().toString(),
+    customerId: subscription.customerId,
+    checkoutPageId: subscription.checkoutPageId || null,
+    amount: subscription.amount,
+    currency: subscription.currency || "EUR",
+    interval: subscription.interval || "monthly",
+    intervalCount: subscription.intervalCount || 1,
+    status: "active",
+    nextChargeDate: subscription.nextChargeDate || calculateNextChargeDate(subscription.interval, subscription.intervalCount),
+    lastChargeDate: null,
+    failedAttempts: 0,
+    createdAt: new Date().toISOString(),
+    metadata: subscription.metadata || {},
+  };
+  subscriptions.push(newSubscription);
+  await saveSubscriptions(subscriptions);
+  return newSubscription;
+}
+
+export async function updateSubscription(id, updates) {
+  const subscriptions = await getSubscriptions();
+  const index = subscriptions.findIndex((s) => s.id === id);
+  if (index === -1) throw new Error("Subscription not found");
+  subscriptions[index] = { ...subscriptions[index], ...updates };
+  await saveSubscriptions(subscriptions);
+  return subscriptions[index];
+}
+
+export async function deleteSubscription(id) {
+  const subscriptions = await getSubscriptions();
+  const filtered = subscriptions.filter((s) => s.id !== id);
+  await saveSubscriptions(filtered);
+  return filtered;
+}
+
+export async function getSubscriptionsByCustomerId(customerId) {
+  const subscriptions = await getSubscriptions();
+  return subscriptions.filter((s) => s.customerId === customerId);
+}
+
+export async function getDueSubscriptions() {
+  const subscriptions = await getSubscriptions();
+  const now = new Date();
+  return subscriptions.filter((s) => {
+    if (s.status !== "active") return false;
+    const nextCharge = new Date(s.nextChargeDate);
+    return nextCharge <= now;
+  });
+}
+
+export async function getSubscriptionById(id) {
+  const subscriptions = await getSubscriptions();
+  return subscriptions.find((s) => s.id === id) || null;
+}
+
+// Helper function to calculate next charge date based on interval
+export function calculateNextChargeDate(interval, intervalCount = 1) {
+  const now = new Date();
+  const next = new Date(now);
+
+  switch (interval) {
+    case "daily":
+      next.setDate(next.getDate() + intervalCount);
+      break;
+    case "weekly":
+      next.setDate(next.getDate() + (7 * intervalCount));
+      break;
+    case "monthly":
+      next.setMonth(next.getMonth() + intervalCount);
+      break;
+    case "yearly":
+      next.setFullYear(next.getFullYear() + intervalCount);
+      break;
+    default:
+      next.setMonth(next.getMonth() + 1); // Default to monthly
+  }
+
+  return next.toISOString();
+}
+
+// ==================== BILLING LOGS ====================
+
+export async function getBillingLogs(limit = 100) {
+  try {
+    const raw = await kv.get("sumup-billing-logs");
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    const logs = Array.isArray(parsed) ? parsed : [];
+    // Return most recent first, limited
+    return logs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, limit);
+  } catch (e) {
+    console.error("[getBillingLogs] error:", e);
+    return [];
+  }
+}
+
+export async function saveBillingLogs(logs) {
+  try {
+    await kv.set("sumup-billing-logs", JSON.stringify(logs));
+    return logs;
+  } catch (e) {
+    console.error("[saveBillingLogs] error:", e);
+    throw e;
+  }
+}
+
+export async function addBillingLog(log) {
+  const logs = await getBillingLogs(1000); // Get more for storage
+  const newLog = {
+    id: Date.now().toString(),
+    subscriptionId: log.subscriptionId,
+    customerId: log.customerId,
+    amount: log.amount,
+    currency: log.currency || "EUR",
+    status: log.status, // "success", "failed", "pending"
+    errorMessage: log.errorMessage || null,
+    sumupCheckoutId: log.sumupCheckoutId || null,
+    transactionCode: log.transactionCode || null,
+    createdAt: new Date().toISOString(),
+  };
+  logs.unshift(newLog); // Add to beginning (most recent first)
+  // Keep only last 1000 logs
+  const trimmed = logs.slice(0, 1000);
+  await saveBillingLogs(trimmed);
+  return newLog;
+}
+
+export async function getBillingLogsBySubscription(subscriptionId, limit = 50) {
+  const logs = await getBillingLogs(1000);
+  return logs.filter((l) => l.subscriptionId === subscriptionId).slice(0, limit);
 }

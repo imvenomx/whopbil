@@ -17,6 +17,8 @@ export default function CheckoutPagesPage() {
     price: "",
     productName: "",
     productImage: "",
+    interval: "monthly",
+    intervalCount: "1",
   });
 
   async function loadPages() {
@@ -75,7 +77,7 @@ export default function CheckoutPagesPage() {
         throw new Error(data.error || "Failed to save page");
       }
 
-      setForm({ name: "", slug: "", price: "", productName: "", productImage: "" });
+      setForm({ name: "", slug: "", price: "", productName: "", productImage: "", interval: "monthly", intervalCount: "1" });
       setEditingId(null);
       await loadPages();
 
@@ -129,12 +131,14 @@ export default function CheckoutPagesPage() {
       price: page.price || "",
       productName: page.productName || "",
       productImage: page.productImage || "",
+      interval: page.interval || "monthly",
+      intervalCount: String(page.intervalCount || "1"),
     });
   }
 
   function cancelEdit() {
     setEditingId(null);
-    setForm({ name: "", slug: "", price: "", productName: "", productImage: "" });
+    setForm({ name: "", slug: "", price: "", productName: "", productImage: "", interval: "monthly", intervalCount: "1" });
   }
 
   function copyToClipboard(text) {
@@ -285,6 +289,36 @@ export default function CheckoutPagesPage() {
             />
           </div>
 
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label htmlFor="interval">Billing Interval</label>
+              <select
+                id="interval"
+                className="field"
+                value={form.interval}
+                onChange={(e) => setForm((f) => ({ ...f, interval: e.target.value }))}
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="intervalCount">Every X periods</label>
+              <input
+                id="intervalCount"
+                className="field"
+                type="number"
+                min="1"
+                max="12"
+                value={form.intervalCount}
+                onChange={(e) => setForm((f) => ({ ...f, intervalCount: e.target.value }))}
+                placeholder="1"
+              />
+            </div>
+          </div>
+
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
             {editingId && (
               <button type="button" className="btn btn-secondary" onClick={cancelEdit}>
@@ -325,7 +359,9 @@ export default function CheckoutPagesPage() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>{page.name}</div>
                   <div style={{ fontSize: 13, color: "#6d7175", marginBottom: 4 }}>
-                    {page.price && `${page.price} EUR`} {page.productName && `- ${page.productName}`}
+                    {page.price && `${page.price} EUR`}
+                    {page.interval && ` / ${page.intervalCount > 1 ? page.intervalCount + " " : ""}${page.interval}`}
+                    {page.productName && ` - ${page.productName}`}
                   </div>
                   <div
                     style={{
