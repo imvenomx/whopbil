@@ -175,7 +175,6 @@ export async function POST(request) {
 
     const processPayload = {
       payment_type: "card",
-      installments: 1,
       card: cardPayload,
       mandate: {
         type: "recurrent",
