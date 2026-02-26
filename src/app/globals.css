@@ -99,7 +99,7 @@ body {
   flex: 0 0 50%;
   width: 50%;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   background-color: var(--color-background);
   border-right: 1px solid var(--color-border);
 }
@@ -118,7 +118,7 @@ body {
 }
 
 .checkout-sidebar-inner {
-  width: 100%;
+  width: 500px;
   padding: 40px 40px;
   position: sticky;
   top: 0;
