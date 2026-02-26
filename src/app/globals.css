@@ -96,7 +96,8 @@ body {
 }
 
 .checkout-main {
-  flex: 1;
+  flex: 0 0 50%;
+  width: 50%;
   display: flex;
   justify-content: center;
   background-color: var(--color-background);
@@ -105,20 +106,20 @@ body {
 
 .checkout-main-inner {
   width: 100%;
-  max-width: 100%;
-  padding: 40px 60px;
+  max-width: 600px;
+  padding: 40px 40px;
 }
 
 .checkout-sidebar {
-  flex: 0 0 var(--sidebar-width);
+  flex: 0 0 50%;
+  width: 50%;
   background-color: var(--color-surface-secondary);
   border-left: 1px solid #e1e1e1;
 }
 
 .checkout-sidebar-inner {
   width: 100%;
-  max-width: 100%;
-  padding: 40px 60px;
+  padding: 40px 40px;
   position: sticky;
   top: 0;
 }
