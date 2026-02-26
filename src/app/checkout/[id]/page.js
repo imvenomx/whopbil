@@ -617,7 +617,7 @@ export default function CheckoutPage() {
         <div className="checkout-main-inner">
           {/* Logo / Breadcrumbs */}
           <header className="checkout-header">
-            <a href="#" className="checkout-logo">{pageConfig?.storeName || "Cutekits"}</a>
+            <span className="checkout-logo">Checkout</span>
             <nav className="checkout-breadcrumbs">
               <a href="#">Cart</a>
               <span className="separator">&gt;</span>
@@ -641,7 +641,6 @@ export default function CheckoutPage() {
             <section className="checkout-section">
               <div className="section-header">
                 <h2 className="section-title">{t.contact}</h2>
-                <a href="#" className="section-link">Log in</a>
               </div>
 
               <div className="form-row">
@@ -672,7 +671,7 @@ export default function CheckoutPage() {
 
             {/* Delivery Section */}
             <section className="checkout-section">
-              <h2 className="section-title">{t.delivery}</h2>
+              <h2 className="section-title" style={{ marginBottom: 16 }}>{t.delivery}</h2>
 
               <div className="form-row">
                 <select
@@ -885,6 +884,15 @@ export default function CheckoutPage() {
               <LockIcon />
               {t.secure_payment}
             </p>
+
+            {/* Footer Links */}
+            <footer className="checkout-footer">
+              <div className="footer-links">
+                <a href="#" className="footer-link">Terms & conditions</a>
+                <a href="#" className="footer-link">Privacy policy</a>
+                <a href="#" className="footer-link">Return/Shipping policy</a>
+              </div>
+            </footer>
           </form>
         </div>
       </main>
