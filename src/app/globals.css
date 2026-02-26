@@ -98,28 +98,27 @@ body {
 .checkout-main {
   flex: 1;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   background-color: var(--color-background);
   border-right: 1px solid var(--color-border);
 }
 
 .checkout-main-inner {
   width: 100%;
-  max-width: var(--max-width-left);
-  padding: 40px 56px 40px 40px;
+  max-width: 100%;
+  padding: 40px 60px;
 }
 
 .checkout-sidebar {
   flex: 0 0 var(--sidebar-width);
-  max-width: 500px;
   background-color: var(--color-surface-secondary);
   border-left: 1px solid #e1e1e1;
 }
 
 .checkout-sidebar-inner {
   width: 100%;
-  max-width: var(--max-width-right);
-  padding: 40px 40px 40px 44px;
+  max-width: 100%;
+  padding: 40px 60px;
   position: sticky;
   top: 0;
 }
