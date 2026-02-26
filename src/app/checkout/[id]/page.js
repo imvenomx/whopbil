@@ -3,109 +3,152 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
+// Internationalization strings
 const I18N = {
   en: {
-    store_name: "Cutekits",
-    secure_checkout: "Secure checkout",
-    summary_title: "Order summary",
-    summary_items: "1 item",
-    free_shipping: "Free shipping",
-    subtotal: "Subtotal",
-    total: "Total",
-    contact_title: "Contact",
-    contact_subtitle: "We'll use this to confirm your order.",
-    email_label: "Email",
+    contact: "Contact",
+    contact_subtitle: "We'll use this to send your order confirmation.",
     email_placeholder: "Email",
     marketing_opt_in: "Email me with news and offers",
-    shipping_title: "Shipping address",
-    address_label: "Address",
+    delivery: "Delivery",
+    country_placeholder: "Country/Region",
+    first_name_placeholder: "First name",
+    last_name_placeholder: "Last name",
     address_placeholder: "Address",
-    apt_label: "Apartment, suite, etc. (optional)",
     apt_placeholder: "Apartment, suite, etc. (optional)",
-    city_label: "City",
     city_placeholder: "City",
-    postal_label: "Postal code",
+    province_placeholder: "Province",
     postal_placeholder: "Postal code",
-    country_label: "Country/Region",
-    country_fr: "France",
-    country_de: "Germany",
-    return_to_cart: "Return to cart",
+    payment: "Payment",
+    payment_subtitle: "All transactions are secure and encrypted.",
+    credit_card: "Credit card",
+    card_number_placeholder: "Card number",
+    expiry_placeholder: "Expiration date (MM / YY)",
+    cvv_placeholder: "Security code",
+    name_on_card_placeholder: "Name on card",
+    billing_same: "Use shipping address as billing address",
+    pay_now: "Pay now",
+    order_summary: "Order summary",
+    discount_placeholder: "Discount code",
+    apply: "Apply",
+    subtotal: "Subtotal",
+    shipping: "Shipping",
+    shipping_placeholder: "Enter shipping address",
+    total: "Total",
+    free: "Free",
+    processing: "Processing...",
+    secure_payment: "Your payment is secured with SSL encryption",
+  },
+  it: {
+    contact: "Contatti",
+    contact_subtitle: "Useremo queste informazioni per inviarti la conferma dell'ordine.",
+    email_placeholder: "E-mail",
+    marketing_opt_in: "Inviami novità e offerte via email",
+    delivery: "Consegna",
+    country_placeholder: "Paese/Regione",
+    first_name_placeholder: "Nome",
+    last_name_placeholder: "Cognome",
+    address_placeholder: "Indirizzo",
+    apt_placeholder: "Appartamento, suite, ecc. (facoltativo)",
+    city_placeholder: "Città",
+    province_placeholder: "Provincia",
+    postal_placeholder: "CAP",
+    payment: "Pagamento",
+    payment_subtitle: "Tutte le transazioni sono sicure e crittografate.",
+    credit_card: "Carta di credito",
+    card_number_placeholder: "Numero carta",
+    expiry_placeholder: "Data di scadenza (MM / AA)",
+    cvv_placeholder: "Codice di sicurezza",
+    name_on_card_placeholder: "Nome sulla carta",
+    billing_same: "Usa l'indirizzo di spedizione come indirizzo di fatturazione",
+    pay_now: "Paga ora",
+    order_summary: "Riepilogo ordine",
+    discount_placeholder: "Codice sconto",
+    apply: "Applica",
+    subtotal: "Subtotale",
+    shipping: "Spedizione",
+    shipping_placeholder: "Inserisci l'indirizzo di spedizione",
+    total: "Totale",
+    free: "Gratis",
+    processing: "Elaborazione...",
+    secure_payment: "Il tuo pagamento è protetto con crittografia SSL",
   },
   fr: {
-    store_name: "Cutekits",
-    secure_checkout: "Paiement sécurisé",
-    summary_title: "Récapitulatif",
-    summary_items: "1 article",
-    free_shipping: "Livraison gratuite",
-    subtotal: "Sous-total",
-    total: "Total",
-    contact_title: "Coordonnées",
-    contact_subtitle: "Nous utiliserons ces informations pour confirmer votre commande.",
-    email_label: "E-mail",
+    contact: "Coordonnées",
+    contact_subtitle: "Nous utiliserons ces informations pour vous envoyer la confirmation de commande.",
     email_placeholder: "E-mail",
     marketing_opt_in: "M'envoyer des offres et des actualités par e-mail",
-    shipping_title: "Adresse de livraison",
-    address_label: "Adresse",
+    delivery: "Livraison",
+    country_placeholder: "Pays/Région",
+    first_name_placeholder: "Prénom",
+    last_name_placeholder: "Nom",
     address_placeholder: "Adresse",
-    apt_label: "Appartement, suite, etc. (facultatif)",
     apt_placeholder: "Appartement, suite, etc. (facultatif)",
-    city_label: "Ville",
     city_placeholder: "Ville",
-    postal_label: "Code postal",
+    province_placeholder: "Province",
     postal_placeholder: "Code postal",
-    country_label: "Pays/Région",
-    country_fr: "France",
-    country_de: "Allemagne",
-    return_to_cart: "Retour au panier",
+    payment: "Paiement",
+    payment_subtitle: "Toutes les transactions sont sécurisées et cryptées.",
+    credit_card: "Carte de crédit",
+    card_number_placeholder: "Numéro de carte",
+    expiry_placeholder: "Date d'expiration (MM / AA)",
+    cvv_placeholder: "Code de sécurité",
+    name_on_card_placeholder: "Nom sur la carte",
+    billing_same: "Utiliser l'adresse de livraison comme adresse de facturation",
+    pay_now: "Payer maintenant",
+    order_summary: "Récapitulatif",
+    discount_placeholder: "Code de réduction",
+    apply: "Appliquer",
+    subtotal: "Sous-total",
+    shipping: "Livraison",
+    shipping_placeholder: "Entrez l'adresse de livraison",
+    total: "Total",
+    free: "Gratuit",
+    processing: "Traitement...",
+    secure_payment: "Votre paiement est sécurisé par cryptage SSL",
   },
   de: {
-    store_name: "Cutekits",
-    secure_checkout: "Sicherer Checkout",
-    summary_title: "Bestellübersicht",
-    summary_items: "1 Artikel",
-    free_shipping: "Kostenloser Versand",
-    subtotal: "Zwischensumme",
-    total: "Gesamt",
-    contact_title: "Kontakt",
-    contact_subtitle: "Wir verwenden diese Informationen, um deine Bestellung zu bestätigen.",
-    email_label: "E-Mail",
+    contact: "Kontakt",
+    contact_subtitle: "Wir verwenden diese Informationen, um Ihnen die Bestellbestätigung zu senden.",
     email_placeholder: "E-Mail",
     marketing_opt_in: "E-Mails mit Neuigkeiten und Angeboten erhalten",
-    shipping_title: "Lieferadresse",
-    address_label: "Adresse",
+    delivery: "Lieferung",
+    country_placeholder: "Land/Region",
+    first_name_placeholder: "Vorname",
+    last_name_placeholder: "Nachname",
     address_placeholder: "Adresse",
-    apt_label: "Wohnung, Suite usw. (optional)",
     apt_placeholder: "Wohnung, Suite usw. (optional)",
-    city_label: "Stadt",
     city_placeholder: "Stadt",
-    postal_label: "Postleitzahl",
+    province_placeholder: "Bundesland",
     postal_placeholder: "Postleitzahl",
-    country_label: "Land/Region",
-    country_fr: "Frankreich",
-    country_de: "Deutschland",
-    return_to_cart: "Zurück zum Warenkorb",
+    payment: "Zahlung",
+    payment_subtitle: "Alle Transaktionen sind sicher und verschlüsselt.",
+    credit_card: "Kreditkarte",
+    card_number_placeholder: "Kartennummer",
+    expiry_placeholder: "Ablaufdatum (MM / JJ)",
+    cvv_placeholder: "Sicherheitscode",
+    name_on_card_placeholder: "Name auf der Karte",
+    billing_same: "Lieferadresse als Rechnungsadresse verwenden",
+    pay_now: "Jetzt bezahlen",
+    order_summary: "Bestellübersicht",
+    discount_placeholder: "Rabattcode",
+    apply: "Anwenden",
+    subtotal: "Zwischensumme",
+    shipping: "Versand",
+    shipping_placeholder: "Lieferadresse eingeben",
+    total: "Gesamt",
+    free: "Kostenlos",
+    processing: "Verarbeitung...",
+    secure_payment: "Ihre Zahlung ist durch SSL-Verschlüsselung geschützt",
   },
 };
 
-const COUNTRY_TO_LANG = { FR: "fr", DE: "de", ES: "es", IT: "it", NL: "nl" };
+const COUNTRY_TO_LANG = { FR: "fr", DE: "de", IT: "it", ES: "es", NL: "nl" };
 
 function normalizeLang(lang) {
   if (!lang) return "en";
   const base = String(lang).toLowerCase().split("-")[0];
   return I18N[base] ? base : "en";
-}
-
-function translatePage(lang) {
-  const dict = I18N[normalizeLang(lang)] || I18N.en;
-  document.documentElement.lang = lang;
-  document.querySelectorAll("[data-i18n]").forEach((el) => {
-    const key = el.getAttribute("data-i18n");
-    if (key && dict[key]) el.textContent = dict[key];
-  });
-  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
-    const key = el.getAttribute("data-i18n-placeholder");
-    if (key && dict[key]) el.setAttribute("placeholder", dict[key]);
-  });
 }
 
 async function detectLangByIP() {
@@ -139,10 +182,67 @@ function formatExpiry(value) {
   return v;
 }
 
+// Card icons as inline SVGs for reliability
+const CardIcons = {
+  visa: (
+    <svg viewBox="0 0 38 24" width="38" height="24" aria-label="Visa">
+      <rect width="38" height="24" rx="3" fill="#1434CB"/>
+      <path d="M15.56 8.14l-2.37 7.72h-1.9l-1.17-6.16c-.07-.28-.13-.38-.35-.5-.35-.2-.93-.38-1.44-.5l.03-.56h3.06c.39 0 .74.26.83.71l.76 4.03 1.87-4.74h1.88zm7.37 5.2c.01-2.04-2.82-2.15-2.8-3.06.01-.28.27-.57.85-.65.29-.04 1.08-.07 1.98.35l.35-1.64a5.4 5.4 0 00-1.88-.35c-1.98 0-3.37 1.05-3.38 2.56-.01 1.11 1 1.73 1.76 2.1.78.38 1.04.63 1.04 .97-.01.52-.62.75-1.2.76-.99.02-1.57-.27-2.03-.48l-.36 1.68c.46.21 1.32.4 2.2.41 2.1 0 3.48-1.04 3.49-2.65h-.02zm5.22 2.52h1.66l-1.45-7.72h-1.53c-.35 0-.64.2-.77.51l-2.72 7.21h1.9l.38-1.04h2.32l.21 1.04zm-2.02-2.48l.95-2.63.55 2.63h-1.5zm-7.6-5.24l-1.5 7.72h-1.8l1.5-7.72h1.8z" fill="#fff"/>
+    </svg>
+  ),
+  mastercard: (
+    <svg viewBox="0 0 38 24" width="38" height="24" aria-label="Mastercard">
+      <rect width="38" height="24" rx="3" fill="#000"/>
+      <circle cx="15" cy="12" r="7" fill="#EB001B"/>
+      <circle cx="23" cy="12" r="7" fill="#F79E1B"/>
+      <path d="M19 6.5a7 7 0 000 11 7 7 0 000-11z" fill="#FF5F00"/>
+    </svg>
+  ),
+  amex: (
+    <svg viewBox="0 0 38 24" width="38" height="24" aria-label="American Express">
+      <rect width="38" height="24" rx="3" fill="#006FCF"/>
+      <path d="M10 12h18M10 9h18M10 15h18" stroke="#fff" strokeWidth="1.5"/>
+      <text x="19" y="14" textAnchor="middle" fill="#fff" fontSize="6" fontWeight="bold">AMEX</text>
+    </svg>
+  ),
+};
+
+// Lock icon for card number field
+const LockIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+    <path d="M7 11V7a5 5 0 0110 0v4"/>
+  </svg>
+);
+
+// Checkmark icon for success
+const CheckIcon = () => (
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+);
+
+// Shopping cart icon for summary toggle (mobile)
+const CartIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="21" r="1"/>
+    <circle cx="20" cy="21" r="1"/>
+    <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+  </svg>
+);
+
+// Chevron icon
+const ChevronIcon = ({ down }) => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: down ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+    <polyline points="18 15 12 9 6 15"/>
+  </svg>
+);
+
 export default function CheckoutPage() {
   const params = useParams();
   const pageId = params.id;
 
+  // Page state
   const [pageConfig, setPageConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -155,25 +255,52 @@ export default function CheckoutPage() {
   const [threeDSUrl, setThreeDSUrl] = useState(null);
   const [pendingCheckout, setPendingCheckout] = useState(null);
 
-  // Debug state
-  const [debugLog, setDebugLog] = useState([]);
+  // Language
+  const [lang, setLang] = useState("en");
+  const t = I18N[lang] || I18N.en;
 
-  // Form fields
+  // Mobile summary toggle
+  const [summaryOpen, setSummaryOpen] = useState(false);
+
+  // Form fields - Contact
   const [email, setEmail] = useState("");
+  const [marketingOptIn, setMarketingOptIn] = useState(true);
+
+  // Form fields - Delivery
+  const [country, setCountry] = useState("IT");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [address, setAddress] = useState("");
+  const [apartment, setApartment] = useState("");
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+
+  // Form fields - Payment
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [cardName, setCardName] = useState("");
+  const [useSameAddress, setUseSameAddress] = useState(true);
 
-  const displayPrice = pageConfig ? `${pageConfig.price} €` : "...";
+  // Discount code
+  const [discountCode, setDiscountCode] = useState("");
 
-  // i18n
+  // Computed values
+  const displayPrice = pageConfig ? `€${pageConfig.price}` : "...";
+  const hasShippingAddress = address.trim() !== "";
+
+  // Load language
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const ipLang = await detectLangByIP();
       const browserLang = normalizeLang(navigator.language);
-      if (!cancelled) translatePage(ipLang || browserLang || "en");
+      if (!cancelled) {
+        const finalLang = ipLang || browserLang || "en";
+        setLang(finalLang);
+        document.documentElement.lang = finalLang;
+      }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -181,12 +308,10 @@ export default function CheckoutPage() {
   // Load page config
   useEffect(() => {
     let cancelled = false;
-
     (async () => {
       try {
         setLoading(true);
         setError(null);
-
         const pageRes = await fetch(`/api/checkout-page/${pageId}`, { cache: "no-store" });
         if (pageRes.status === 404) {
           setNotFound(true);
@@ -194,7 +319,6 @@ export default function CheckoutPage() {
           return;
         }
         if (!pageRes.ok) throw new Error("Failed to load checkout page");
-
         const pageData = await pageRes.json();
         if (cancelled) return;
         setPageConfig(pageData);
@@ -204,7 +328,6 @@ export default function CheckoutPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-
     return () => { cancelled = true; };
   }, [pageId]);
 
@@ -214,8 +337,6 @@ export default function CheckoutPage() {
     if (!checkoutData) return { done: false };
 
     try {
-      console.log("[3DS] Checking status for:", checkoutData.checkoutId);
-
       const res = await fetch("/api/checkout/check-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -226,7 +347,6 @@ export default function CheckoutPage() {
       });
 
       const data = await res.json();
-      console.log("[3DS] Status response:", data);
 
       if (data.pending) {
         return { done: false, status: "pending" };
@@ -261,37 +381,63 @@ export default function CheckoutPage() {
     }
   };
 
-  const handle3DSComplete = async () => {
-    setProcessing(true);
-    let attempts = 0;
-    const maxAttempts = 60;
+  // 3DS polling
+  useEffect(() => {
+    if (show3DS && threeDSUrl && pendingCheckout) {
+      let attempts = 0;
+      const maxAttempts = 90;
+      let pollInterval;
+      let stopped = false;
 
-    const poll = async () => {
-      const done = await checkPaymentStatus();
-      if (done) {
-        setProcessing(false);
-        return;
-      }
-      attempts++;
-      if (attempts < maxAttempts) {
-        setTimeout(poll, 2000);
-      } else {
-        setShow3DS(false);
-        setError("3DS verification timed out. Please try again.");
-        setProcessing(false);
-      }
-    };
-    setTimeout(poll, 3000);
-  };
+      const poll = async () => {
+        if (stopped) return;
+
+        const result = await checkPaymentStatus(pendingCheckout);
+
+        if (result.done) {
+          clearInterval(pollInterval);
+          stopped = true;
+          setShow3DS(false);
+          setProcessing(false);
+
+          if (result.success) {
+            setPaymentSuccess(true);
+          } else {
+            setError(result.error || "Payment failed after 3DS");
+          }
+          return;
+        }
+
+        attempts++;
+
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          stopped = true;
+          setShow3DS(false);
+          setError("3DS verification timed out. Please try again.");
+          setProcessing(false);
+        }
+      };
+
+      setTimeout(() => {
+        if (!stopped) {
+          poll();
+          pollInterval = setInterval(poll, 2000);
+        }
+      }, 2000);
+
+      return () => {
+        stopped = true;
+        clearInterval(pollInterval);
+      };
+    }
+  }, [show3DS, threeDSUrl, pendingCheckout?.checkoutId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setDebugLog([]);
 
-    const log = (msg) => setDebugLog(prev => [...prev, msg]);
-    log("Step 1: Starting payment");
-
+    // Validation
     if (!email || !email.includes("@")) {
       setError("Please enter a valid email address");
       return;
@@ -305,7 +451,11 @@ export default function CheckoutPage() {
       return;
     }
     if (cardCvv.length < 3) {
-      setError("Please enter a valid CVV");
+      setError("Please enter a valid security code");
+      return;
+    }
+    if (!cardName.trim()) {
+      setError("Please enter the name on card");
       return;
     }
 
@@ -313,7 +463,6 @@ export default function CheckoutPage() {
 
     try {
       const amount = parseFloat(pageConfig.price.replace(",", ".")) || 84.0;
-      log(`Step 2: Amount = ${amount}`);
 
       let expiryMonth, expiryYear;
       if (cardExpiry.includes("/")) {
@@ -322,7 +471,6 @@ export default function CheckoutPage() {
         expiryMonth = cardExpiry.substring(0, 2);
         expiryYear = cardExpiry.substring(2, 4);
       }
-      log(`Step 3: Expiry = ${expiryMonth}/${expiryYear}`);
 
       const requestBody = {
         email: email.trim(),
@@ -338,7 +486,6 @@ export default function CheckoutPage() {
           name: cardName.trim(),
         },
       };
-      log("Step 4: Sending request...");
 
       const res = await fetch("/api/checkout/process-card", {
         method: "POST",
@@ -346,23 +493,17 @@ export default function CheckoutPage() {
         body: JSON.stringify(requestBody),
       });
 
-      log(`Step 5: Response status = ${res.status}`);
       const responseText = await res.text();
-      log(`Step 6: Response = ${responseText}`);
-
       let data;
       try {
         data = JSON.parse(responseText);
-        log(`Step 7: Parsed, keys = ${Object.keys(data).join(", ")}`);
       } catch (parseErr) {
-        log("Step 7 ERROR: JSON parse failed");
         setError(`Server error: ${responseText.substring(0, 500)}`);
         return;
       }
 
       // Check if 3DS is required
       if (data.requires3DS && data.nextStep) {
-        log("Step 8: 3DS required, showing iframe");
         setPendingCheckout({
           checkoutId: data.checkoutId,
           customerId: data.customerId,
@@ -374,17 +515,14 @@ export default function CheckoutPage() {
       }
 
       if (!res.ok || !data.success) {
-        log(`Step 8: Payment failed - ${data.error}`);
-        setError(`FULL API RESPONSE:\n${responseText}`);
+        setError(data.error || "Payment failed");
         return;
       }
 
-      log("Step 8: Payment successful!");
       setPaymentSuccess(true);
 
       // Create subscription
       try {
-        log("Creating subscription...");
         await fetch("/api/checkout/complete-tokenization", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -403,108 +541,42 @@ export default function CheckoutPage() {
         });
       } catch (subErr) {}
     } catch (err) {
-      log(`Exception: ${err.message}`);
-      setError(`Exception: ${err.message}`);
+      setError(`Error: ${err.message}`);
     } finally {
       setProcessing(false);
     }
   };
 
+  // Not Found page
   if (notFound) {
     return (
-      <main style={{ padding: 40, textAlign: "center" }}>
-        <h1>Checkout Not Found</h1>
-        <p>The checkout page you're looking for doesn't exist.</p>
+      <main className="not-found-page">
+        <h1 className="not-found-title">Checkout Not Found</h1>
+        <p className="not-found-message">The checkout page you're looking for doesn't exist.</p>
       </main>
     );
   }
 
-  // 3DS iframe - poll for completion
-  useEffect(() => {
-    if (show3DS && threeDSUrl && pendingCheckout) {
-      let attempts = 0;
-      const maxAttempts = 90; // 3 minutes
-      let pollInterval;
-      let stopped = false;
-
-      console.log("[3DS] Starting polling for checkout:", pendingCheckout.checkoutId);
-
-      const poll = async () => {
-        if (stopped) return;
-
-        const result = await checkPaymentStatus(pendingCheckout);
-        console.log("[3DS] Poll result:", result);
-
-        if (result.done) {
-          clearInterval(pollInterval);
-          stopped = true;
-          setShow3DS(false);
-          setProcessing(false);
-
-          if (result.success) {
-            setPaymentSuccess(true);
-          } else {
-            setError(result.error || "Payment failed after 3DS");
-          }
-          return;
-        }
-
-        attempts++;
-        console.log("[3DS] Poll attempt:", attempts);
-
-        if (attempts >= maxAttempts) {
-          clearInterval(pollInterval);
-          stopped = true;
-          setShow3DS(false);
-          setError("3DS verification timed out. Please try again.");
-          setProcessing(false);
-        }
-      };
-
-      // Start polling every 2 seconds after initial delay
-      setTimeout(() => {
-        if (!stopped) {
-          poll(); // First poll
-          pollInterval = setInterval(poll, 2000);
-        }
-      }, 2000);
-
-      return () => {
-        stopped = true;
-        clearInterval(pollInterval);
-      };
-    }
-  }, [show3DS, threeDSUrl, pendingCheckout?.checkoutId]);
-
-  // 3DS iframe modal
+  // 3DS iframe
   if (show3DS && threeDSUrl) {
     return (
-      <main style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
-        <h2 style={{ marginBottom: 16, textAlign: "center" }}>Complete 3D Secure Verification</h2>
-        <p style={{ color: "#6d7175", marginBottom: 20, textAlign: "center" }}>
-          Please complete the verification below. The page will update automatically when done.
-        </p>
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden", marginBottom: 20 }}>
+      <main className="threeds-container">
+        <div className="threeds-header">
+          <h2 className="threeds-title">Complete 3D Secure Verification</h2>
+          <p className="threeds-subtitle">Please complete the verification below. The page will update automatically when done.</p>
+        </div>
+        <div className="threeds-iframe-wrapper">
           <iframe
             src={threeDSUrl}
-            style={{ width: "100%", height: 500, border: "none" }}
+            className="threeds-iframe"
             title="3D Secure Verification"
           />
         </div>
-        <p style={{ textAlign: "center", color: "#6d7175", fontSize: 13, marginBottom: 16 }}>
-          Checking payment status...
-        </p>
+        <p className="threeds-status">Checking payment status...</p>
         <button
           onClick={() => { setShow3DS(false); setError("3DS verification cancelled"); }}
-          style={{
-            width: "100%",
-            padding: "12px 20px",
-            backgroundColor: "#f3f4f6",
-            color: "#374151",
-            border: "1px solid #d1d5db",
-            borderRadius: 8,
-            cursor: "pointer"
-          }}
+          className="btn btn-secondary"
+          style={{ width: "100%" }}
         >
           Cancel
         </button>
@@ -512,270 +584,392 @@ export default function CheckoutPage() {
     );
   }
 
+  // Success page
   if (paymentSuccess) {
     return (
-      <main style={{ padding: 40, textAlign: "center", maxWidth: 600, margin: "0 auto" }}>
-        <div style={{ fontSize: 64, marginBottom: 24, color: "#22c55e" }}>&#10003;</div>
-        <h1 style={{ marginBottom: 16 }}>Payment Successful!</h1>
-        <p style={{ color: "#6d7175", marginBottom: 24 }}>
+      <main className="success-page">
+        <div className="success-icon">
+          <CheckIcon />
+        </div>
+        <h1 className="success-title">Payment Successful!</h1>
+        <p className="success-message">
           Thank you for your subscription. Your card has been saved for future billing.
-        </p>
-        <p style={{ color: "#6d7175" }}>
           You will receive a confirmation email at <strong>{email}</strong>
         </p>
       </main>
     );
   }
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="loading-container">
+        Loading checkout...
+      </div>
+    );
+  }
+
+  // Main checkout page
   return (
-    <>
-      <header className="header">
-        <div className="header-inner">
-          <div className="header-grid">
-            <div className="header-left">
-              <div className="header-left-inner">
-                <div className="store-name" data-i18n="store_name">Cutekits</div>
+    <div className="checkout-container">
+      {/* Left Column - Form */}
+      <main className="checkout-main">
+        <div className="checkout-main-inner">
+          {/* Logo / Breadcrumbs */}
+          <header className="checkout-header">
+            <a href="#" className="checkout-logo">{pageConfig?.storeName || "Cutekits"}</a>
+            <nav className="checkout-breadcrumbs">
+              <a href="#">Cart</a>
+              <span className="separator">&gt;</span>
+              <span className="current">Information</span>
+              <span className="separator">&gt;</span>
+              <span>Shipping</span>
+              <span className="separator">&gt;</span>
+              <span>Payment</span>
+            </nav>
+          </header>
+
+          <form onSubmit={handleSubmit}>
+            {/* Error message */}
+            {error && (
+              <div className="error-message">
+                {error}
               </div>
-            </div>
-            <div className="header-right">
-              <div className="header-right-inner">
-                <div className="secure-badge" data-i18n="secure_checkout">Secure checkout</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+            )}
 
-      <main className="container">
-        <div className="grid">
-          <section className="left">
-            <div className="left-inner">
-              <div className="summary summary-card">
-                <div className="summary-row" style={{ paddingTop: 0 }}>
-                  <div>
-                    <div style={{ fontWeight: 650 }} data-i18n="summary_title">Order summary</div>
-                    <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }} data-i18n="summary_items">1 item</div>
-                  </div>
-                  <span className="pill">EUR</span>
-                </div>
-
-                <div className="product">
-                  {pageConfig?.productImage ? (
-                    <img className="product-img" src={pageConfig.productImage} alt="Product" />
-                  ) : (
-                    <img className="product-img" src="https://cdn-icons-png.flaticon.com/512/8832/8832119.png" alt="Product" />
-                  )}
-                  <div style={{ minWidth: 0 }}>
-                    <div className="product-title">{pageConfig?.productName || "Product"}</div>
-                    <div className="product-variant" data-i18n="free_shipping">Free shipping</div>
-                  </div>
-                  <div style={{ marginLeft: "auto", fontWeight: 650 }}>{displayPrice}</div>
-                </div>
-
-                <div className="summary-row">
-                  <span style={{ color: "var(--muted)" }} data-i18n="subtotal">Subtotal</span>
-                  <span>{displayPrice}</span>
-                </div>
-                <div className="summary-row">
-                  <span className="total" data-i18n="total">Total</span>
-                  <span className="total">{displayPrice}</span>
-                </div>
+            {/* Contact Section */}
+            <section className="checkout-section">
+              <div className="section-header">
+                <h2 className="section-title">{t.contact}</h2>
+                <a href="#" className="section-link">Log in</a>
               </div>
 
-              <div className="panel" style={{ padding: 0 }}>
-                <h2 className="section-title" data-i18n="contact_title">Contact</h2>
-                <p className="section-subtitle" data-i18n="contact_subtitle">We'll use this to confirm your order.</p>
-                <div className="form">
-                  <div>
-                    <label htmlFor="email" data-i18n="email_label">Email</label>
-                    <input
-                      id="email"
-                      className="field"
-                      type="email"
-                      placeholder="Email"
-                      data-i18n-placeholder="email_placeholder"
-                      autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="checkbox">
-                    <input id="updates" type="checkbox" defaultChecked />
-                    <label htmlFor="updates" style={{ margin: 0, color: "var(--text)", fontSize: 13 }} data-i18n="marketing_opt_in">Email me with news and offers</label>
-                  </div>
+              <div className="form-row">
+                <input
+                  type="email"
+                  className="form-input"
+                  placeholder={t.email_placeholder}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </div>
+
+              <div className="form-row">
+                <label className="form-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={marketingOptIn}
+                    onChange={(e) => setMarketingOptIn(e.target.checked)}
+                  />
+                  <span className="form-checkbox-label">{t.marketing_opt_in}</span>
+                </label>
+              </div>
+            </section>
+
+            <div className="divider" />
+
+            {/* Delivery Section */}
+            <section className="checkout-section">
+              <h2 className="section-title">{t.delivery}</h2>
+
+              <div className="form-row">
+                <select
+                  className="form-select"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  autoComplete="country"
+                >
+                  <option value="IT">Italy</option>
+                  <option value="FR">France</option>
+                  <option value="DE">Germany</option>
+                  <option value="ES">Spain</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="AT">Austria</option>
+                  <option value="BE">Belgium</option>
+                  <option value="PT">Portugal</option>
+                  <option value="CH">Switzerland</option>
+                  <option value="GB">United Kingdom</option>
+                </select>
+              </div>
+
+              <div className="form-row form-row-inline">
+                <div className="form-group">
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder={t.first_name_placeholder}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    autoComplete="given-name"
+                  />
+                </div>
+                <div className="form-group">
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder={t.last_name_placeholder}
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    autoComplete="family-name"
+                  />
                 </div>
               </div>
 
-              <div className="panel" style={{ borderTop: "1px solid var(--border-soft)", paddingLeft: 0, paddingRight: 0 }}>
-                <h2 className="section-title" data-i18n="shipping_title">Shipping address</h2>
-                <div>
-                  <label htmlFor="address" data-i18n="address_label">Address</label>
-                  <input id="address" className="field" type="text" placeholder="Address" data-i18n-placeholder="address_placeholder" autoComplete="street-address" />
+              <div className="form-row">
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={t.address_placeholder}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  autoComplete="street-address"
+                />
+              </div>
+
+              <div className="form-row">
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={t.apt_placeholder}
+                  value={apartment}
+                  onChange={(e) => setApartment(e.target.value)}
+                  autoComplete="address-line2"
+                />
+              </div>
+
+              <div className="form-row form-row-three">
+                <div className="form-group">
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder={t.city_placeholder}
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    autoComplete="address-level2"
+                  />
                 </div>
-                <div>
-                  <label htmlFor="apt" data-i18n="apt_label">Apartment, suite, etc. (optional)</label>
-                  <input id="apt" className="field" type="text" placeholder="Apartment, suite, etc. (optional)" data-i18n-placeholder="apt_placeholder" autoComplete="address-line2" />
+                <div className="form-group">
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder={t.province_placeholder}
+                    value={province}
+                    onChange={(e) => setProvince(e.target.value)}
+                    autoComplete="address-level1"
+                  />
                 </div>
-                <div className="row">
-                  <div>
-                    <label htmlFor="city" data-i18n="city_label">City</label>
-                    <input id="city" className="field" type="text" placeholder="City" data-i18n-placeholder="city_placeholder" autoComplete="address-level2" />
-                  </div>
-                  <div>
-                    <label htmlFor="postal" data-i18n="postal_label">Postal code</label>
-                    <input id="postal" className="field" type="text" placeholder="Postal code" data-i18n-placeholder="postal_placeholder" autoComplete="postal-code" />
-                  </div>
-                </div>
-                <div className="row">
-                  <div>
-                    <label htmlFor="country" data-i18n="country_label">Country/Region</label>
-                    <select id="country" className="field" autoComplete="country-name" defaultValue="FR">
-                      <option value="FR" data-i18n="country_fr">France</option>
-                      <option value="DE" data-i18n="country_de">Germany</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="actions">
-                  <a className="link" href="#" onClick={(e) => e.preventDefault()} data-i18n="return_to_cart">Return to cart</a>
+                <div className="form-group">
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder={t.postal_placeholder}
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    autoComplete="postal-code"
+                  />
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <aside className="right">
-            <div className="right-inner">
-              <div className="if">
-                {loading ? (
-                  <div style={{ padding: 40, textAlign: "center", color: "#6d7175" }}>Loading...</div>
-                ) : (
-                  <form onSubmit={handleSubmit} style={{ padding: 20 }}>
-                    <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 600 }}>Payment Details <span style={{fontSize: 10, color: "#999"}}>(v4)</span></h3>
+            <div className="divider" />
 
-                    {/* Debug Log */}
-                    {debugLog.length > 0 && (
-                      <div style={{
-                        background: "#f0f9ff",
-                        border: "1px solid #bae6fd",
-                        borderRadius: 8,
-                        padding: 12,
-                        marginBottom: 16,
-                        fontSize: 11,
-                        maxHeight: 200,
-                        overflow: "auto",
-                      }}>
-                        <strong>Debug Log:</strong>
-                        <pre style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                          {debugLog.join("\n")}
-                        </pre>
-                      </div>
-                    )}
+            {/* Payment Section */}
+            <section className="checkout-section">
+              <h2 className="section-title">{t.payment}</h2>
+              <p className="text-muted text-small" style={{ marginBottom: 16 }}>{t.payment_subtitle}</p>
 
-                    {error && (
-                      <div style={{
-                        background: "#fef2f2",
-                        border: "1px solid #fecaca",
-                        borderRadius: 8,
-                        padding: 12,
-                        marginBottom: 16,
-                        color: "#991b1b",
-                        fontSize: 12,
-                        maxHeight: 300,
-                        overflow: "auto",
-                      }}>
-                        <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{error}</pre>
-                      </div>
-                    )}
+              <div className="payment-methods">
+                {/* Credit Card Method - Always selected */}
+                <div className="payment-method selected">
+                  <input
+                    type="radio"
+                    name="payment-method"
+                    className="payment-method-radio"
+                    checked
+                    readOnly
+                  />
+                  <div className="payment-method-content">
+                    <span className="payment-method-label">{t.credit_card}</span>
+                    <div className="payment-method-icons">
+                      {CardIcons.visa}
+                      {CardIcons.mastercard}
+                      {CardIcons.amex}
+                    </div>
+                  </div>
+                </div>
 
-                    <div style={{ marginBottom: 16 }}>
-                      <label style={{ display: "block", marginBottom: 6, fontSize: 14, fontWeight: 500 }}>
-                        Card Number
-                      </label>
+                {/* Card Fields */}
+                <div className="payment-card-fields">
+                  <div className="form-row">
+                    <div className="card-number-wrapper">
                       <input
                         type="text"
-                        className="field"
-                        placeholder="1234 5678 9012 3456"
+                        className="form-input"
+                        placeholder={t.card_number_placeholder}
                         value={cardNumber}
                         onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                         maxLength={19}
                         autoComplete="cc-number"
-                        style={{ fontFamily: "monospace", letterSpacing: 1 }}
+                        style={{ fontVariantNumeric: "tabular-nums" }}
                       />
-                    </div>
-
-                    <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 14, fontWeight: 500 }}>
-                          Expiry Date
-                        </label>
-                        <input
-                          type="text"
-                          className="field"
-                          placeholder="MM / YY"
-                          value={cardExpiry}
-                          onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                          maxLength={7}
-                          autoComplete="cc-exp"
-                        />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 14, fontWeight: 500 }}>
-                          CVV
-                        </label>
-                        <input
-                          type="text"
-                          className="field"
-                          placeholder="123"
-                          value={cardCvv}
-                          onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                          maxLength={4}
-                          autoComplete="cc-csc"
-                        />
+                      <div className="card-input-icon">
+                        <LockIcon />
                       </div>
                     </div>
+                  </div>
 
-                    <div style={{ marginBottom: 20 }}>
-                      <label style={{ display: "block", marginBottom: 6, fontSize: 14, fontWeight: 500 }}>
-                        Cardholder Name
-                      </label>
+                  <div className="form-row form-row-inline">
+                    <div className="form-group">
                       <input
                         type="text"
-                        className="field"
-                        placeholder="John Doe"
-                        value={cardName}
-                        onChange={(e) => setCardName(e.target.value)}
-                        autoComplete="cc-name"
+                        className="form-input"
+                        placeholder={t.expiry_placeholder}
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
+                        maxLength={7}
+                        autoComplete="cc-exp"
                       />
                     </div>
+                    <div className="form-group">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder={t.cvv_placeholder}
+                        value={cardCvv}
+                        onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                        maxLength={4}
+                        autoComplete="cc-csc"
+                      />
+                    </div>
+                  </div>
 
-                    <button
-                      type="submit"
-                      disabled={processing}
-                      style={{
-                        width: "100%",
-                        padding: "14px 20px",
-                        backgroundColor: processing ? "#9ca3af" : "#1a1a1a",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 8,
-                        fontSize: 16,
-                        fontWeight: 600,
-                        cursor: processing ? "not-allowed" : "pointer",
-                        transition: "background-color 0.2s",
-                      }}
-                    >
-                      {processing ? "Processing..." : `Pay ${displayPrice}`}
-                    </button>
+                  <div className="form-row">
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder={t.name_on_card_placeholder}
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value)}
+                      autoComplete="cc-name"
+                    />
+                  </div>
 
-                    <p style={{ marginTop: 16, fontSize: 12, color: "#6d7175", textAlign: "center" }}>
-                      Your payment is secured with SSL encryption
-                    </p>
-                  </form>
+                  <div className="form-row" style={{ marginTop: 4 }}>
+                    <label className="form-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={useSameAddress}
+                        onChange={(e) => setUseSameAddress(e.target.checked)}
+                      />
+                      <span className="form-checkbox-label">{t.billing_same}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="divider" />
+
+            {/* Pay Button */}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={processing}
+            >
+              {processing ? t.processing : t.pay_now}
+            </button>
+
+            <p className="secure-notice">
+              <LockIcon />
+              {t.secure_payment}
+            </p>
+          </form>
+        </div>
+      </main>
+
+      {/* Right Column - Order Summary */}
+      <aside className="checkout-sidebar">
+        <div className="checkout-sidebar-inner">
+          {/* Mobile toggle */}
+          <div
+            className="summary-toggle"
+            onClick={() => setSummaryOpen(!summaryOpen)}
+          >
+            <div className="summary-toggle-left">
+              <CartIcon />
+              <span className="summary-toggle-text">
+                {summaryOpen ? "Hide order summary" : "Show order summary"}
+              </span>
+              <ChevronIcon down={summaryOpen} />
+            </div>
+            <span className="summary-toggle-price">{displayPrice}</span>
+          </div>
+
+          <div className={`summary-content ${summaryOpen ? "" : "collapsed"}`}>
+            {/* Product */}
+            <div className="summary-product">
+              <div className="product-thumbnail">
+                <img
+                  src={pageConfig?.productImage || "https://cdn-icons-png.flaticon.com/512/8832/8832119.png"}
+                  alt={pageConfig?.productName || "Product"}
+                />
+                <span className="product-quantity-badge">1</span>
+              </div>
+              <div className="product-details">
+                <p className="product-name">{pageConfig?.productName || "Product"}</p>
+                <p className="product-variant">Monthly subscription</p>
+              </div>
+              <span className="product-price">{displayPrice}</span>
+            </div>
+
+            {/* Discount Code */}
+            <div className="discount-row">
+              <div className="discount-input">
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={t.discount_placeholder}
+                  value={discountCode}
+                  onChange={(e) => setDiscountCode(e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                className="discount-button"
+                disabled={!discountCode.trim()}
+              >
+                {t.apply}
+              </button>
+            </div>
+
+            {/* Totals */}
+            <div className="summary-totals">
+              <div className="summary-line">
+                <span className="summary-line-label">{t.subtotal}</span>
+                <span className="summary-line-value">{displayPrice}</span>
+              </div>
+              <div className="summary-line">
+                <span className="summary-line-label">{t.shipping}</span>
+                {hasShippingAddress ? (
+                  <span className="summary-line-value">{t.free}</span>
+                ) : (
+                  <span className="summary-line-placeholder">{t.shipping_placeholder}</span>
                 )}
               </div>
             </div>
-          </aside>
+
+            <div className="summary-total">
+              <span className="summary-total-label">{t.total}</span>
+              <div className="summary-total-value">
+                <span className="summary-total-currency">EUR</span>
+                <span className="summary-total-amount">{displayPrice}</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
-    </>
+      </aside>
+    </div>
   );
 }
