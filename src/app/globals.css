@@ -865,29 +865,33 @@ body {
 
 @media (max-width: 999px) {
   .checkout-container {
-    flex-direction: column-reverse;
+    flex-direction: column;
   }
 
   .checkout-main {
+    flex: none;
+    width: 100%;
     border-right: none;
     justify-content: center;
   }
 
   .checkout-main-inner {
-    max-width: 600px;
+    width: 100%;
+    max-width: 100%;
     padding: 24px 20px 40px;
   }
 
   .checkout-sidebar {
     flex: none;
-    max-width: none;
+    width: 100%;
     border-left: none;
     border-bottom: 1px solid #e1e1e1;
   }
 
   .checkout-sidebar-inner {
-    max-width: 600px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     padding: 20px;
     position: static;
   }
@@ -936,6 +940,17 @@ body {
   .summary-content.collapsed {
     display: none;
   }
+
+  /* Hide breadcrumbs on mobile */
+  .checkout-breadcrumbs {
+    display: none;
+  }
+
+  /* Adjust payment card fields */
+  .payment-card-fields .form-row-inline {
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -970,6 +985,20 @@ body {
 
   .summary-total-amount {
     font-size: 20px;
+  }
+
+  .footer-links {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .discount-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .discount-button {
+    width: 100%;
   }
 }
 
