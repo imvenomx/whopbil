@@ -58,17 +58,19 @@ export async function POST(request) {
     console.log("[check-status] Full checkout data:", JSON.stringify(checkoutData, null, 2));
 
     // Check if still pending (3DS in progress)
-    if (checkoutData.status === "PENDING") {
+    // Also treat unknown/processing states as pending
+    const pendingStates = ["PENDING", "PROCESSING", "CREATED", "IN_PROGRESS"];
+    if (pendingStates.includes(checkoutData.status) || !checkoutData.status) {
       return NextResponse.json({
         success: false,
         pending: true,
-        status: "PENDING",
+        status: checkoutData.status || "PENDING",
         checkoutId,
       });
     }
 
     // Check if payment was successful
-    if (checkoutData.status === "PAID") {
+    if (checkoutData.status === "PAID" || checkoutData.status === "SUCCESSFUL") {
       // Payment successful - fetch and store the payment instrument
       let paymentInstrument = null;
 
@@ -133,13 +135,25 @@ export async function POST(request) {
       });
     }
 
-    // Payment failed or other status
+    // Only treat FAILED status as actual failure
+    const failedStates = ["FAILED", "EXPIRED", "CANCELLED", "DECLINED"];
+    if (failedStates.includes(checkoutData.status)) {
+      return NextResponse.json({
+        success: false,
+        error: `Payment ${checkoutData.status.toLowerCase()}`,
+        checkoutId,
+        status: checkoutData.status,
+        details: checkoutData,
+      });
+    }
+
+    // Unknown status - treat as pending to avoid false failures
+    console.log("[check-status] Unknown status, treating as pending:", checkoutData.status);
     return NextResponse.json({
       success: false,
-      error: `Payment ${checkoutData.status || "failed"}`,
-      checkoutId,
+      pending: true,
       status: checkoutData.status,
-      details: checkoutData,
+      checkoutId,
     });
   } catch (e) {
     console.error("[check-status] error:", e);

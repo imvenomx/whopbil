@@ -419,12 +419,13 @@ export default function CheckoutPage() {
         }
       };
 
+      // Wait 4 seconds before first poll to give 3DS time to load
       setTimeout(() => {
         if (!stopped) {
           poll();
-          pollInterval = setInterval(poll, 2000);
+          pollInterval = setInterval(poll, 3000); // Poll every 3 seconds
         }
-      }, 2000);
+      }, 4000);
 
       return () => {
         stopped = true;
