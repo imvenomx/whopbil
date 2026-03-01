@@ -347,8 +347,10 @@ export default function CheckoutPage() {
       });
 
       const data = await res.json();
+      console.log("[3DS] Check status response:", data);
 
       if (data.pending) {
+        console.log("[3DS] Status is pending, continuing to poll...");
         return { done: false, status: "pending" };
       }
 
@@ -373,7 +375,8 @@ export default function CheckoutPage() {
         }
         return { done: true, success: true };
       } else {
-        return { done: true, success: false, error: data.error || "Payment failed" };
+        console.log("[3DS] Payment failed with status:", data.status, "error:", data.error);
+        return { done: true, success: false, error: data.error || `Payment failed (status: ${data.status})` };
       }
     } catch (err) {
       console.error("[3DS] Check status error:", err);
