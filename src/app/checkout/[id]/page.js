@@ -348,10 +348,11 @@ export default function CheckoutPage() {
 
       const data = await res.json();
       console.log("[3DS] Check status response:", data);
+      setPollStatus(data.status || "checking...");
 
       if (data.pending) {
         console.log("[3DS] Status is pending, continuing to poll...");
-        return { done: false, status: "pending" };
+        return { done: false, status: data.status || "pending" };
       }
 
       if (data.success) {
@@ -561,6 +562,9 @@ export default function CheckoutPage() {
     );
   }
 
+  // Debug state for 3DS polling
+  const [pollStatus, setPollStatus] = useState(null);
+
   // 3DS iframe
   if (show3DS && threeDSUrl) {
     return (
@@ -576,7 +580,9 @@ export default function CheckoutPage() {
             title="3D Secure Verification"
           />
         </div>
-        <p className="threeds-status">Checking payment status...</p>
+        <p className="threeds-status">
+          Checking payment status... {pollStatus && `(Status: ${pollStatus})`}
+        </p>
         <button
           onClick={() => { setShow3DS(false); setError("3DS verification cancelled"); }}
           className="btn btn-secondary"
