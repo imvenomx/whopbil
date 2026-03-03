@@ -194,9 +194,10 @@ export async function POST(request) {
       cardPayload.zip_code = String(card.zip_code).trim();
     }
 
-    // Process card payment with mandate for recurring
+    // Process card payment with mandate for recurring (per SumUp docs)
     const processPayload = {
       payment_type: "card",
+      installments: 1,
       card: cardPayload,
       mandate: {
         type: "recurrent",
