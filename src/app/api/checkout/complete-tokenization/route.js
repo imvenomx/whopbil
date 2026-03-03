@@ -85,17 +85,18 @@ export async function POST(request) {
 
     const checkoutData = await checkoutResponse.json();
     console.log("[POST /api/checkout/complete-tokenization] Checkout status:", checkoutData.status);
-    console.log("[POST /api/checkout/complete-tokenization] Has token:", !!checkoutData.payment_instrument?.token);
+    console.log("[POST /api/checkout/complete-tokenization] Full data:", JSON.stringify(checkoutData, null, 2));
 
-    // For SETUP_RECURRING_PAYMENT, status may stay PENDING but card is tokenized
-    // Accept if status is PAID OR if we have a payment_instrument token
-    const hasToken = checkoutData.payment_instrument?.token;
-    if (checkoutData.status !== "PAID" && !hasToken) {
+    // Check for success status
+    const successStates = ["PAID", "SUCCESSFUL", "COMPLETED", "CAPTURED"];
+    if (!successStates.includes(checkoutData.status)) {
       return NextResponse.json(
-        { error: "Checkout is not paid and no token found", status: checkoutData.status },
+        { error: "Checkout is not paid", status: checkoutData.status, details: checkoutData },
         { status: 400 }
       );
     }
+
+    const hasToken = checkoutData.payment_instrument?.token;
 
     // Fetch payment instruments for this customer
     const instrumentsResponse = await fetch(
