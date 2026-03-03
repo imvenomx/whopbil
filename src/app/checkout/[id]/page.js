@@ -349,7 +349,9 @@ export default function CheckoutPage() {
 
       const data = await res.json();
       console.log("[3DS] Check status response:", data);
-      setPollStatus(data.status || "checking...");
+      const mandateInfo = data._debug?.mandate?.status || data.details?.mandate?.status || "unknown";
+      const tokenInfo = data._debug?.payment_instrument?.token ? "yes" : "no";
+      setPollStatus(`${data.status || "checking..."} | mandate: ${mandateInfo} | token: ${tokenInfo}`);
 
       if (data.pending) {
         console.log("[3DS] Status is pending, continuing to poll...");
