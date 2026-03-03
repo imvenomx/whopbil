@@ -77,10 +77,14 @@ export async function POST(request) {
     }
 
     // Check if payment was successful (including various success states)
-    // Also check if transaction exists (sometimes status lags behind)
+    // Also check if payment_instrument token exists (card tokenized) or transaction exists
     const successStates = ["PAID", "SUCCESSFUL", "COMPLETED", "AUTHORIZED", "CAPTURED"];
-    const hasTransaction = checkoutData.transaction_id || checkoutData.transaction_code;
-    if (successStates.includes(checkoutData.status) || (hasTransaction && checkoutData.status !== "FAILED")) {
+    const hasToken = checkoutData.payment_instrument?.token;
+    const hasTransaction = checkoutData.transaction_id || checkoutData.transaction_code ||
+      (checkoutData.transactions?.length > 0 && checkoutData.transactions[0]?.transaction_code);
+
+    // For SETUP_RECURRING_PAYMENT, having a token means success (card tokenized)
+    if (successStates.includes(checkoutData.status) || hasToken) {
       // Payment successful - fetch and store the payment instrument
       let paymentInstrument = null;
 
