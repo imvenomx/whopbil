@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readConfig } from "@/lib/configStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,26 @@ export async function GET(request) {
   console.log("[3ds-complete] checkout_id:", checkoutId);
   console.log("[3ds-complete] status:", status);
   console.log("[3ds-complete] All params:", Object.fromEntries(searchParams));
+
+  // Immediately check checkout status with SumUp
+  if (checkoutId) {
+    try {
+      const config = await readConfig();
+      const checkoutResponse = await fetch(
+        `https://api.sumup.com/v0.1/checkouts/${checkoutId}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${config.apiKey}`,
+          },
+        }
+      );
+      const checkoutData = await checkoutResponse.json();
+      console.log("[3ds-complete] SumUp checkout status:", checkoutData.status);
+      console.log("[3ds-complete] SumUp full response:", JSON.stringify(checkoutData, null, 2));
+    } catch (e) {
+      console.error("[3ds-complete] Error checking SumUp:", e.message);
+    }
+  }
   console.log("==========================================");
 
   // Return HTML page that notifies parent via postMessage
