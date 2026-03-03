@@ -77,12 +77,15 @@ export async function POST(request) {
     }
 
     // Check if payment was successful
+    // For SETUP_RECURRING_PAYMENT: having a token means success (card is tokenized)
+    // The actual charge happens separately via complete-tokenization
     const successStates = ["PAID", "SUCCESSFUL", "COMPLETED", "CAPTURED"];
     const hasToken = checkoutData.payment_instrument?.token;
-    const isPending = checkoutData.status === "PENDING";
+    const failedStates = ["FAILED", "EXPIRED", "CANCELLED", "DECLINED"];
+    const isFailed = failedStates.includes(checkoutData.status);
 
-    // Success if: PAID status OR (has token AND not failed)
-    if (successStates.includes(checkoutData.status) || (hasToken && isPending)) {
+    // Success if: PAID status OR (has token AND not explicitly failed)
+    if (successStates.includes(checkoutData.status) || (hasToken && !isFailed)) {
       // Payment successful - fetch and store the payment instrument
       let paymentInstrument = null;
 

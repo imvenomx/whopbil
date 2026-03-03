@@ -122,7 +122,9 @@ export async function POST(request) {
     console.log("[process-card] Referer header:", request.headers.get("referer"));
     console.log("[process-card] Computed origin:", origin);
 
-    // Create checkout with customer_id - mandate will save the card
+    // Create checkout with SETUP_RECURRING_PAYMENT to tokenize and activate mandate
+    // This authorizes the amount, tokenizes the card, then releases the authorization
+    // The actual charge will happen via charge-token endpoint after tokenization
     const checkoutPayload = {
       checkout_reference: `card_${Date.now()}`,
       amount: parseFloat(amount),
@@ -130,6 +132,7 @@ export async function POST(request) {
       merchant_code: config.merchantCode,
       description,
       customer_id: customer.sumupCustomerId,
+      purpose: "SETUP_RECURRING_PAYMENT",
     };
 
     // Add redirect_url if we have origin
