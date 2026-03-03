@@ -42,11 +42,6 @@ export async function POST(request) {
       card, // { number, expiry_month, expiry_year, cvv, name, zip_code }
     } = body;
 
-    // Get user agent and IP for mandate
-    const userAgent = request.headers.get("user-agent") || "Unknown";
-    const forwardedFor = request.headers.get("x-forwarded-for");
-    const userIp = forwardedFor ? forwardedFor.split(",")[0].trim() : "127.0.0.1";
-
     if (!email || !email.includes("@")) {
       return NextResponse.json(
         { error: "[Step 3] Valid email is required", step: 3 },
@@ -119,7 +114,8 @@ export async function POST(request) {
     // Get the origin for redirect URL
     const origin = request.headers.get("origin") || request.headers.get("referer")?.split("/").slice(0, 3).join("/") || "";
 
-    // Create checkout with customer_id for mandate/tokenization
+    // Create checkout with customer_id and purpose for tokenization
+    // Per SumUp docs: purpose: "SETUP_RECURRING_PAYMENT" is required to tokenize the card
     const checkoutPayload = {
       checkout_reference: `card_${Date.now()}`,
       amount: parseFloat(amount),
@@ -127,6 +123,7 @@ export async function POST(request) {
       merchant_code: config.merchantCode,
       description,
       customer_id: customer.sumupCustomerId,
+      purpose: "SETUP_RECURRING_PAYMENT",
     };
 
     // Add redirect_url if we have origin
@@ -193,14 +190,11 @@ export async function POST(request) {
       cardPayload.zip_code = String(card.zip_code).trim();
     }
 
+    // Per SumUp docs: for SETUP_RECURRING_PAYMENT, use installments: 1
     const processPayload = {
       payment_type: "card",
       card: cardPayload,
-      mandate: {
-        type: "recurrent",
-        user_agent: userAgent,
-        user_ip: userIp,
-      },
+      installments: 1,
     };
 
     console.log("[process-card] Processing checkout with card:", {
