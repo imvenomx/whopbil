@@ -118,6 +118,9 @@ export async function POST(request) {
 
     // Get the origin for redirect URL
     const origin = request.headers.get("origin") || request.headers.get("referer")?.split("/").slice(0, 3).join("/") || "";
+    console.log("[process-card] Origin header:", request.headers.get("origin"));
+    console.log("[process-card] Referer header:", request.headers.get("referer"));
+    console.log("[process-card] Computed origin:", origin);
 
     // Create checkout with customer_id and purpose for tokenization
     const checkoutPayload = {

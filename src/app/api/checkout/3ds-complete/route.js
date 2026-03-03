@@ -9,6 +9,13 @@ export async function GET(request) {
   const checkoutId = searchParams.get("checkout_id") || searchParams.get("id");
   const status = searchParams.get("status");
 
+  console.log("==========================================");
+  console.log("[3ds-complete] HIT! Full URL:", request.url);
+  console.log("[3ds-complete] checkout_id:", checkoutId);
+  console.log("[3ds-complete] status:", status);
+  console.log("[3ds-complete] All params:", Object.fromEntries(searchParams));
+  console.log("==========================================");
+
   // Return HTML page that notifies parent via postMessage
   const html = `
 <!DOCTYPE html>
