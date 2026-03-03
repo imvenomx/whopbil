@@ -42,6 +42,11 @@ export async function POST(request) {
       card, // { number, expiry_month, expiry_year, cvv, name, zip_code }
     } = body;
 
+    // Get user agent and IP for mandate
+    const userAgent = request.headers.get("user-agent") || "Unknown";
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const userIp = forwardedFor ? forwardedFor.split(",")[0].trim() : "127.0.0.1";
+
     if (!email || !email.includes("@")) {
       return NextResponse.json(
         { error: "[Step 3] Valid email is required", step: 3 },
@@ -189,10 +194,15 @@ export async function POST(request) {
       cardPayload.zip_code = String(card.zip_code).trim();
     }
 
-    // Process card payment (purpose handles recurring, no mandate needed)
+    // Process card payment with mandate for recurring
     const processPayload = {
       payment_type: "card",
       card: cardPayload,
+      mandate: {
+        type: "recurrent",
+        user_agent: userAgent,
+        user_ip: userIp,
+      },
     };
 
     console.log("[process-card] Processing checkout with card:", {

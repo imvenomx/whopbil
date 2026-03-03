@@ -9,7 +9,7 @@ export async function GET(request) {
   const checkoutId = searchParams.get("checkout_id") || searchParams.get("id");
   const status = searchParams.get("status");
 
-  // Return a simple HTML page that will be shown in the iframe
+  // Return HTML page that notifies parent via postMessage
   const html = `
 <!DOCTYPE html>
 <html>
@@ -50,6 +50,16 @@ export async function GET(request) {
     <h1>Verification Complete</h1>
     <p>Please wait while we confirm your payment...</p>
   </div>
+  <script>
+    // Notify parent window that 3DS is complete
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: '3DS_COMPLETE',
+        checkoutId: '${checkoutId || ""}',
+        status: '${status || ""}'
+      }, '*');
+    }
+  </script>
 </body>
 </html>
   `;

@@ -386,7 +386,34 @@ export default function CheckoutPage() {
     }
   };
 
-  // 3DS polling
+  // Listen for 3DS completion message from iframe
+  useEffect(() => {
+    const handleMessage = async (event) => {
+      if (event.data?.type === '3DS_COMPLETE' && pendingCheckout) {
+        console.log("[3DS] Received completion message:", event.data);
+        setPollStatus("3DS complete, checking...");
+
+        // Immediately check status
+        const result = await checkPaymentStatus(pendingCheckout);
+        console.log("[3DS] Status after completion:", result);
+
+        if (result.done) {
+          setShow3DS(false);
+          setProcessing(false);
+          if (result.success) {
+            setPaymentSuccess(true);
+          } else {
+            setError(result.error || "Payment failed after 3DS");
+          }
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [pendingCheckout]);
+
+  // 3DS polling (backup)
   useEffect(() => {
     if (show3DS && threeDSUrl && pendingCheckout) {
       let attempts = 0;
