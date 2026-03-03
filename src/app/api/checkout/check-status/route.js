@@ -63,19 +63,21 @@ export async function POST(request) {
     console.log("==========================================");
 
     // Check if payment was successful
-    // For SETUP_RECURRING_PAYMENT: having a token means success (card is tokenized)
-    // The actual charge happens separately via complete-tokenization
+    // For SETUP_RECURRING_PAYMENT: need token AND active mandate (3DS must complete)
     const successStates = ["PAID", "SUCCESSFUL", "COMPLETED", "CAPTURED"];
     const hasToken = checkoutData.payment_instrument?.token;
+    const mandateStatus = checkoutData.mandate?.status;
+    const mandateActive = mandateStatus === "active";
     const failedStates = ["FAILED", "EXPIRED", "CANCELLED", "DECLINED"];
     const isFailed = failedStates.includes(checkoutData.status);
 
     console.log("[check-status] hasToken:", hasToken);
+    console.log("[check-status] mandateStatus:", mandateStatus);
     console.log("[check-status] isFailed:", isFailed);
 
-    // Success if: PAID status OR (has token AND not explicitly failed)
-    // IMPORTANT: Check token BEFORE checking pending status!
-    if (successStates.includes(checkoutData.status) || (hasToken && !isFailed)) {
+    // Success if: PAID status OR (has token AND mandate is active)
+    // Mandate only becomes active AFTER 3DS completes
+    if (successStates.includes(checkoutData.status) || (hasToken && mandateActive)) {
       // Payment successful - fetch and store the payment instrument
       let paymentInstrument = null;
 
