@@ -85,10 +85,14 @@ export async function POST(request) {
 
     const checkoutData = await checkoutResponse.json();
     console.log("[POST /api/checkout/complete-tokenization] Checkout status:", checkoutData.status);
+    console.log("[POST /api/checkout/complete-tokenization] Has token:", !!checkoutData.payment_instrument?.token);
 
-    if (checkoutData.status !== "PAID") {
+    // For SETUP_RECURRING_PAYMENT, status may stay PENDING but card is tokenized
+    // Accept if status is PAID OR if we have a payment_instrument token
+    const hasToken = checkoutData.payment_instrument?.token;
+    if (checkoutData.status !== "PAID" && !hasToken) {
       return NextResponse.json(
-        { error: "Checkout is not paid", status: checkoutData.status },
+        { error: "Checkout is not paid and no token found", status: checkoutData.status },
         { status: 400 }
       );
     }
@@ -120,15 +124,22 @@ export async function POST(request) {
       ? instrumentsData
       : (instrumentsData.payment_instruments || []);
 
+    // If no instruments from API, use the token from checkout directly
+    let latestInstrument;
     if (instruments.length === 0) {
-      return NextResponse.json(
-        { error: "No payment instruments found" },
-        { status: 400 }
-      );
+      if (hasToken) {
+        console.log("[POST /api/checkout/complete-tokenization] Using token from checkout response");
+        latestInstrument = { token: checkoutData.payment_instrument.token };
+      } else {
+        return NextResponse.json(
+          { error: "No payment instruments found" },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Get the most recent instrument (the one just added)
+      latestInstrument = instruments[instruments.length - 1] || instruments[0];
     }
-
-    // Get the most recent instrument (the one just added)
-    const latestInstrument = instruments[instruments.length - 1] || instruments[0];
 
     // Format payment instrument for storage
     const paymentInstrument = {
