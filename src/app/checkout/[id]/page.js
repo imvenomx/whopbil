@@ -254,6 +254,7 @@ export default function CheckoutPage() {
   const [show3DS, setShow3DS] = useState(false);
   const [threeDSUrl, setThreeDSUrl] = useState(null);
   const [pendingCheckout, setPendingCheckout] = useState(null);
+  const [pollStatus, setPollStatus] = useState(null);
 
   // Language
   const [lang, setLang] = useState("en");
@@ -562,9 +563,6 @@ export default function CheckoutPage() {
     );
   }
 
-  // Debug state for 3DS polling
-  const [pollStatus, setPollStatus] = useState(null);
-
   // 3DS iframe
   if (show3DS && threeDSUrl) {
     return (
@@ -583,6 +581,17 @@ export default function CheckoutPage() {
         <p className="threeds-status">
           Checking payment status... {pollStatus && `(Status: ${pollStatus})`}
         </p>
+        <button
+          onClick={async () => {
+            const result = await checkPaymentStatus(pendingCheckout);
+            console.log("[Manual Check] Result:", result);
+            alert(`Status: ${result.status || pollStatus}\nDone: ${result.done}\nSuccess: ${result.success}\nError: ${result.error || 'none'}`);
+          }}
+          className="btn btn-secondary"
+          style={{ width: "100%", marginBottom: "10px" }}
+        >
+          Check Status Now
+        </button>
         <button
           onClick={() => { setShow3DS(false); setError("3DS verification cancelled"); }}
           className="btn btn-secondary"
