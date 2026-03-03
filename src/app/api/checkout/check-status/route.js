@@ -76,8 +76,11 @@ export async function POST(request) {
       });
     }
 
-    // Check if payment was successful
-    if (checkoutData.status === "PAID" || checkoutData.status === "SUCCESSFUL") {
+    // Check if payment was successful (including various success states)
+    // Also check if transaction exists (sometimes status lags behind)
+    const successStates = ["PAID", "SUCCESSFUL", "COMPLETED", "AUTHORIZED", "CAPTURED"];
+    const hasTransaction = checkoutData.transaction_id || checkoutData.transaction_code;
+    if (successStates.includes(checkoutData.status) || (hasTransaction && checkoutData.status !== "FAILED")) {
       // Payment successful - fetch and store the payment instrument
       let paymentInstrument = null;
 
