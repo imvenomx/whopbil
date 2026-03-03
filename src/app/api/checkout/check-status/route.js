@@ -62,20 +62,6 @@ export async function POST(request) {
     console.log("[check-status] Full checkout data:", JSON.stringify(checkoutData, null, 2));
     console.log("==========================================");
 
-    // Check if still pending (3DS in progress)
-    // Also treat unknown/processing states as pending
-    const pendingStates = ["PENDING", "PROCESSING", "CREATED", "IN_PROGRESS"];
-    if (pendingStates.includes(checkoutData.status) || !checkoutData.status) {
-      return NextResponse.json({
-        success: false,
-        pending: true,
-        status: checkoutData.status || "PENDING",
-        checkoutId,
-        // Include full data for debugging
-        _debug: checkoutData,
-      });
-    }
-
     // Check if payment was successful
     // For SETUP_RECURRING_PAYMENT: having a token means success (card is tokenized)
     // The actual charge happens separately via complete-tokenization
@@ -84,7 +70,11 @@ export async function POST(request) {
     const failedStates = ["FAILED", "EXPIRED", "CANCELLED", "DECLINED"];
     const isFailed = failedStates.includes(checkoutData.status);
 
+    console.log("[check-status] hasToken:", hasToken);
+    console.log("[check-status] isFailed:", isFailed);
+
     // Success if: PAID status OR (has token AND not explicitly failed)
+    // IMPORTANT: Check token BEFORE checking pending status!
     if (successStates.includes(checkoutData.status) || (hasToken && !isFailed)) {
       // Payment successful - fetch and store the payment instrument
       let paymentInstrument = null;
@@ -150,9 +140,20 @@ export async function POST(request) {
       });
     }
 
+    // Check if still pending (3DS in progress) - only if no token yet
+    const pendingStates = ["PENDING", "PROCESSING", "CREATED", "IN_PROGRESS"];
+    if (pendingStates.includes(checkoutData.status) || !checkoutData.status) {
+      return NextResponse.json({
+        success: false,
+        pending: true,
+        status: checkoutData.status || "PENDING",
+        checkoutId,
+        _debug: checkoutData,
+      });
+    }
+
     // Only treat FAILED status as actual failure
-    const failedStates = ["FAILED", "EXPIRED", "CANCELLED", "DECLINED"];
-    if (failedStates.includes(checkoutData.status)) {
+    if (isFailed) {
       // Extract transaction failure reason if available
       let failureReason = checkoutData.status;
       if (checkoutData.transactions && checkoutData.transactions.length > 0) {
