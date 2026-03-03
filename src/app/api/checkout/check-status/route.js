@@ -77,9 +77,11 @@ export async function POST(request) {
     }
 
     // Check if payment was successful
+    // For SETUP_RECURRING_PAYMENT, having a token means card is saved (status stays PENDING)
     const successStates = ["PAID", "SUCCESSFUL", "COMPLETED", "CAPTURED"];
+    const hasToken = checkoutData.payment_instrument?.token;
 
-    if (successStates.includes(checkoutData.status)) {
+    if (successStates.includes(checkoutData.status) || hasToken) {
       // Payment successful - fetch and store the payment instrument
       let paymentInstrument = null;
 

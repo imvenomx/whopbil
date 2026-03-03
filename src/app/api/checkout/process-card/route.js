@@ -122,14 +122,16 @@ export async function POST(request) {
     console.log("[process-card] Referer header:", request.headers.get("referer"));
     console.log("[process-card] Computed origin:", origin);
 
-    // Create checkout with customer_id (mandate in process step will save the card)
+    // Create checkout with SETUP_RECURRING_PAYMENT to tokenize card
+    // Amount will be authorized and instantly refunded
     const checkoutPayload = {
       checkout_reference: `card_${Date.now()}`,
-      amount: parseFloat(amount),
+      amount: 1, // Minimum amount for tokenization (will be refunded)
       currency,
       merchant_code: config.merchantCode,
-      description,
+      description: "Card verification",
       customer_id: customer.sumupCustomerId,
+      purpose: "SETUP_RECURRING_PAYMENT",
     };
 
     // Add redirect_url if we have origin
