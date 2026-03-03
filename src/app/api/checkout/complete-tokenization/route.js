@@ -184,68 +184,6 @@ export async function POST(request) {
 
     console.log("[POST /api/checkout/complete-tokenization] Subscription created:", subscription);
 
-    // Now charge the first payment using the saved token
-    let firstPaymentResult = null;
-    try {
-      console.log("[POST /api/checkout/complete-tokenization] Charging first payment...");
-
-      // Create a new checkout for the actual charge
-      const chargeCheckoutPayload = {
-        checkout_reference: `first_${Date.now()}`,
-        amount: parseFloat(amount),
-        currency: "EUR",
-        merchant_code: config.merchantCode,
-        description: metadata?.productName || "Subscription Payment",
-        customer_id: customer.sumupCustomerId,
-        purpose: "RECURRING_PAYMENT",
-      };
-
-      const chargeCheckoutRes = await fetch("https://api.sumup.com/v0.1/checkouts", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${config.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(chargeCheckoutPayload),
-      });
-
-      if (chargeCheckoutRes.ok) {
-        const chargeCheckoutData = await chargeCheckoutRes.json();
-        console.log("[POST /api/checkout/complete-tokenization] Charge checkout created:", chargeCheckoutData.id);
-
-        // Process with the saved token
-        const processPayload = {
-          payment_type: "card",
-          token: paymentInstrument.token,
-          customer_id: customer.sumupCustomerId,
-          installments: 1,
-        };
-
-        const processRes = await fetch(
-          `https://api.sumup.com/v0.1/checkouts/${chargeCheckoutData.id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Authorization": `Bearer ${config.apiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(processPayload),
-          }
-        );
-
-        const processData = await processRes.json();
-        console.log("[POST /api/checkout/complete-tokenization] First payment result:", processData.status);
-        firstPaymentResult = {
-          success: processData.status === "PAID",
-          status: processData.status,
-          transactionCode: processData.transaction_code,
-        };
-      }
-    } catch (chargeErr) {
-      console.error("[POST /api/checkout/complete-tokenization] First payment error:", chargeErr.message);
-      firstPaymentResult = { success: false, error: chargeErr.message };
-    }
-
     return NextResponse.json({
       success: true,
       subscription,
@@ -253,7 +191,6 @@ export async function POST(request) {
         card_type: paymentInstrument.card_type,
         last_4_digits: paymentInstrument.last_4_digits,
       },
-      firstPayment: firstPaymentResult,
     });
   } catch (e) {
     console.error("[POST /api/checkout/complete-tokenization] error:", e);

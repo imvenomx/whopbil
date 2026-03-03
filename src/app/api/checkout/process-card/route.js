@@ -122,16 +122,14 @@ export async function POST(request) {
     console.log("[process-card] Referer header:", request.headers.get("referer"));
     console.log("[process-card] Computed origin:", origin);
 
-    // Create checkout with SETUP_RECURRING_PAYMENT to tokenize card
-    // Amount will be authorized and instantly refunded
+    // Create checkout with customer_id - mandate will save the card
     const checkoutPayload = {
       checkout_reference: `card_${Date.now()}`,
-      amount: 1, // Minimum amount for tokenization (will be refunded)
+      amount: parseFloat(amount),
       currency,
       merchant_code: config.merchantCode,
-      description: "Card verification",
+      description,
       customer_id: customer.sumupCustomerId,
-      purpose: "SETUP_RECURRING_PAYMENT",
     };
 
     // Add redirect_url if we have origin
@@ -198,9 +196,10 @@ export async function POST(request) {
       cardPayload.zip_code = String(card.zip_code).trim();
     }
 
-    // Process card payment with mandate
+    // Process card payment with mandate and installments (per SumUp docs)
     const processPayload = {
       payment_type: "card",
+      installments: 1,
       card: cardPayload,
       mandate: {
         type: "recurrent",
