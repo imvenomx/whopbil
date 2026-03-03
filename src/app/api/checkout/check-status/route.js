@@ -71,6 +71,8 @@ export async function POST(request) {
         pending: true,
         status: checkoutData.status || "PENDING",
         checkoutId,
+        // Include full data for debugging
+        _debug: checkoutData,
       });
     }
 

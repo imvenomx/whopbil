@@ -583,9 +583,20 @@ export default function CheckoutPage() {
         </p>
         <button
           onClick={async () => {
-            const result = await checkPaymentStatus(pendingCheckout);
-            console.log("[Manual Check] Result:", result);
-            alert(`Status: ${result.status || pollStatus}\nDone: ${result.done}\nSuccess: ${result.success}\nError: ${result.error || 'none'}`);
+            try {
+              const res = await fetch("/api/checkout/check-status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  checkoutId: pendingCheckout.checkoutId,
+                  customerId: pendingCheckout.customerId,
+                }),
+              });
+              const data = await res.json();
+              alert(`Full response:\n${JSON.stringify(data, null, 2)}`);
+            } catch (err) {
+              alert(`Error: ${err.message}`);
+            }
           }}
           className="btn btn-secondary"
           style={{ width: "100%", marginBottom: "10px" }}
