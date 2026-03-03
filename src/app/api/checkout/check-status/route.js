@@ -150,9 +150,20 @@ export async function POST(request) {
     // Only treat FAILED status as actual failure
     const failedStates = ["FAILED", "EXPIRED", "CANCELLED", "DECLINED"];
     if (failedStates.includes(checkoutData.status)) {
+      // Extract transaction failure reason if available
+      let failureReason = checkoutData.status;
+      if (checkoutData.transactions && checkoutData.transactions.length > 0) {
+        const lastTxn = checkoutData.transactions[checkoutData.transactions.length - 1];
+        if (lastTxn.status) failureReason = lastTxn.status;
+        if (lastTxn.failure_reason) failureReason += `: ${lastTxn.failure_reason}`;
+      }
+
+      console.log("[check-status] Payment failed. Reason:", failureReason);
+      console.log("[check-status] Full checkout data:", JSON.stringify(checkoutData, null, 2));
+
       return NextResponse.json({
         success: false,
-        error: `Payment ${checkoutData.status.toLowerCase()}`,
+        error: `Payment ${failureReason}`,
         checkoutId,
         status: checkoutData.status,
         details: checkoutData,

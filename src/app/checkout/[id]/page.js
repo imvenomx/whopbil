@@ -378,7 +378,20 @@ export default function CheckoutPage() {
         return { done: true, success: true };
       } else {
         console.log("[3DS] Payment failed with status:", data.status, "error:", data.error);
-        return { done: true, success: false, error: data.error || `Payment failed (status: ${data.status})` };
+        console.log("[3DS] Full failure data:", JSON.stringify(data, null, 2));
+
+        // Build detailed error message
+        let errorDetails = [];
+        errorDetails.push(`Status: ${data.status || "unknown"}`);
+        if (data.error) errorDetails.push(`Error: ${data.error}`);
+        if (data.details?.transaction_code) errorDetails.push(`Transaction: ${data.details.transaction_code}`);
+        if (data.details?.payment_instrument?.token) errorDetails.push(`Token: ${data.details.payment_instrument.token.substring(0, 8)}...`);
+        if (data.details?.mandate?.status) errorDetails.push(`Mandate: ${data.details.mandate.status}`);
+        if (data.details?.transactions?.[0]?.status) errorDetails.push(`Txn Status: ${data.details.transactions[0].status}`);
+        if (data.details?.transactions?.[0]?.entry_mode) errorDetails.push(`Entry Mode: ${data.details.transactions[0].entry_mode}`);
+
+        const fullError = errorDetails.join("\n");
+        return { done: true, success: false, error: fullError };
       }
     } catch (err) {
       console.error("[3DS] Check status error:", err);
@@ -689,7 +702,7 @@ export default function CheckoutPage() {
           <form onSubmit={handleSubmit}>
             {/* Error message */}
             {error && (
-              <div className="error-message">
+              <div className="error-message" style={{ whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: "12px" }}>
                 {error}
               </div>
             )}
