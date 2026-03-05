@@ -196,6 +196,7 @@ export async function POST(request) {
     const processPayload = {
       payment_type: "card",
       card: cardPayload,
+      installments: 1,
       mandate: {
         type: "recurrent",
         user_agent: userAgent,

@@ -108,11 +108,12 @@ export async function POST(request) {
     console.log("[charge-token] Checkout created:", checkoutData.id);
 
     // Process the checkout with the saved token
-    // Per SumUp docs: token and customer_id are required for recurring payments
+    // Per SumUp docs: token, customer_id, and installments are required for recurring payments
     const processPayload = {
       payment_type: "card",
       token: token,
       customer_id: customer.sumupCustomerId,
+      installments: 1,
     };
 
     console.log("[charge-token] Processing with payload:", JSON.stringify(processPayload, null, 2));
