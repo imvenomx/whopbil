@@ -63,6 +63,7 @@ export async function POST(request) {
     }
 
     // Create checkout for recurring payment with customer_id
+    // Purpose RECURRING_PAYMENT is required for charging with saved token
     const checkoutPayload = {
       checkout_reference: `sub_${Date.now()}`,
       amount: parseFloat(amount),
@@ -70,6 +71,7 @@ export async function POST(request) {
       merchant_code: config.merchantCode,
       description,
       customer_id: customer.sumupCustomerId,
+      purpose: "RECURRING_PAYMENT",
     };
 
     console.log("[charge-token] Creating checkout:", JSON.stringify(checkoutPayload, null, 2));

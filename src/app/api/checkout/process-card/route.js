@@ -120,6 +120,7 @@ export async function POST(request) {
     const origin = request.headers.get("origin") || request.headers.get("referer")?.split("/").slice(0, 3).join("/") || "";
 
     // Create checkout with customer_id for mandate/tokenization
+    // Purpose SETUP_RECURRING_PAYMENT is required for mandate activation
     const checkoutPayload = {
       checkout_reference: `card_${Date.now()}`,
       amount: parseFloat(amount),
@@ -127,6 +128,7 @@ export async function POST(request) {
       merchant_code: config.merchantCode,
       description,
       customer_id: customer.sumupCustomerId,
+      purpose: "SETUP_RECURRING_PAYMENT",
     };
 
     // Add redirect_url if we have origin
