@@ -85,15 +85,10 @@ export async function POST(request) {
 
     const checkoutData = await checkoutResponse.json();
     console.log("[POST /api/checkout/complete-tokenization] Checkout status:", checkoutData.status);
-    console.log("[POST /api/checkout/complete-tokenization] Has token:", !!checkoutData.payment_instrument?.token);
 
-    // For SETUP_RECURRING_PAYMENT, having a token means success (card is tokenized)
-    const successStates = ["PAID", "SUCCESSFUL", "COMPLETED", "CAPTURED"];
-    const hasToken = checkoutData.payment_instrument?.token;
-
-    if (!successStates.includes(checkoutData.status) && !hasToken) {
+    if (checkoutData.status !== "PAID") {
       return NextResponse.json(
-        { error: "Checkout is not paid and no token found", status: checkoutData.status, details: checkoutData },
+        { error: "Checkout is not paid", status: checkoutData.status },
         { status: 400 }
       );
     }
@@ -125,22 +120,15 @@ export async function POST(request) {
       ? instrumentsData
       : (instrumentsData.payment_instruments || []);
 
-    // If no instruments from API, use the token from checkout directly
-    let latestInstrument;
     if (instruments.length === 0) {
-      if (hasToken) {
-        console.log("[POST /api/checkout/complete-tokenization] Using token from checkout response");
-        latestInstrument = { token: checkoutData.payment_instrument.token };
-      } else {
-        return NextResponse.json(
-          { error: "No payment instruments found" },
-          { status: 400 }
-        );
-      }
-    } else {
-      // Get the most recent instrument (the one just added)
-      latestInstrument = instruments[instruments.length - 1] || instruments[0];
+      return NextResponse.json(
+        { error: "No payment instruments found" },
+        { status: 400 }
+      );
     }
+
+    // Get the most recent instrument (the one just added)
+    const latestInstrument = instruments[instruments.length - 1] || instruments[0];
 
     // Format payment instrument for storage
     const paymentInstrument = {
@@ -184,73 +172,6 @@ export async function POST(request) {
 
     console.log("[POST /api/checkout/complete-tokenization] Subscription created:", subscription);
 
-    // Now charge the actual amount using the saved token
-    // SETUP_RECURRING_PAYMENT only authorizes and releases, so we need to charge separately
-    let chargeResult = null;
-    try {
-      const chargePayload = {
-        checkout_reference: `charge_${Date.now()}`,
-        amount: parseFloat(amount),
-        currency: "EUR",
-        merchant_code: config.merchantCode,
-        description: `Initial charge for ${metadata?.productName || "subscription"}`,
-        customer_id: customer.sumupCustomerId,
-        purpose: "RECURRING_PAYMENT",
-      };
-
-      console.log("[POST /api/checkout/complete-tokenization] Creating charge checkout:", chargePayload);
-
-      const chargeCheckoutRes = await fetch("https://api.sumup.com/v0.1/checkouts", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${config.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(chargePayload),
-      });
-
-      if (chargeCheckoutRes.ok) {
-        const chargeCheckout = await chargeCheckoutRes.json();
-        console.log("[POST /api/checkout/complete-tokenization] Charge checkout created:", chargeCheckout.id);
-
-        // Process the charge with the token
-        const processPayload = {
-          payment_type: "card",
-          token: paymentInstrument.token,
-          customer_id: customer.sumupCustomerId,
-          installments: 1,
-        };
-
-        console.log("[POST /api/checkout/complete-tokenization] Processing charge with token");
-
-        const processRes = await fetch(`https://api.sumup.com/v0.1/checkouts/${chargeCheckout.id}`, {
-          method: "PUT",
-          headers: {
-            "Authorization": `Bearer ${config.apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(processPayload),
-        });
-
-        const processData = await processRes.json();
-        console.log("[POST /api/checkout/complete-tokenization] Charge result:", processData.status);
-
-        chargeResult = {
-          success: processData.status === "PAID",
-          status: processData.status,
-          transactionCode: processData.transaction_code,
-          checkoutId: chargeCheckout.id,
-        };
-      } else {
-        const errorData = await chargeCheckoutRes.json().catch(() => ({}));
-        console.error("[POST /api/checkout/complete-tokenization] Charge checkout creation failed:", errorData);
-        chargeResult = { success: false, error: errorData };
-      }
-    } catch (chargeErr) {
-      console.error("[POST /api/checkout/complete-tokenization] Charge error:", chargeErr);
-      chargeResult = { success: false, error: chargeErr.message };
-    }
-
     return NextResponse.json({
       success: true,
       subscription,
@@ -258,7 +179,6 @@ export async function POST(request) {
         card_type: paymentInstrument.card_type,
         last_4_digits: paymentInstrument.last_4_digits,
       },
-      charge: chargeResult,
     });
   } catch (e) {
     console.error("[POST /api/checkout/complete-tokenization] error:", e);

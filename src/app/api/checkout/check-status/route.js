@@ -54,31 +54,21 @@ export async function POST(request) {
     }
 
     const checkoutData = await checkoutResponse.json();
-    console.log("==========================================");
-    console.log("[check-status] Checkout ID:", checkoutId);
     console.log("[check-status] Checkout status:", checkoutData.status);
-    console.log("[check-status] Transaction ID:", checkoutData.transaction_id);
-    console.log("[check-status] Transaction code:", checkoutData.transaction_code);
     console.log("[check-status] Full checkout data:", JSON.stringify(checkoutData, null, 2));
-    console.log("==========================================");
+
+    // Check if still pending (3DS in progress)
+    if (checkoutData.status === "PENDING") {
+      return NextResponse.json({
+        success: false,
+        pending: true,
+        status: "PENDING",
+        checkoutId,
+      });
+    }
 
     // Check if payment was successful
-    // For SETUP_RECURRING_PAYMENT with minimal amount: having a token is success
-    // We'll charge the actual amount separately using the token
-    const successStates = ["PAID", "SUCCESSFUL", "COMPLETED", "CAPTURED"];
-    const hasToken = checkoutData.payment_instrument?.token;
-    const mandateStatus = checkoutData.mandate?.status;
-    const failedStates = ["FAILED", "EXPIRED", "CANCELLED", "DECLINED"];
-    const isFailed = failedStates.includes(checkoutData.status);
-
-    console.log("[check-status] hasToken:", hasToken);
-    console.log("[check-status] mandateStatus:", mandateStatus);
-    console.log("[check-status] status:", checkoutData.status);
-    console.log("[check-status] isFailed:", isFailed);
-
-    // Success if: PAID status OR has token (even if status is PENDING/FAILED)
-    // The token can still be used to charge, mandate status doesn't matter
-    if (successStates.includes(checkoutData.status) || hasToken) {
+    if (checkoutData.status === "PAID") {
       // Payment successful - fetch and store the payment instrument
       let paymentInstrument = null;
 
@@ -143,47 +133,13 @@ export async function POST(request) {
       });
     }
 
-    // Check if still pending (3DS in progress) - only if no token yet
-    const pendingStates = ["PENDING", "PROCESSING", "CREATED", "IN_PROGRESS"];
-    if (pendingStates.includes(checkoutData.status) || !checkoutData.status) {
-      return NextResponse.json({
-        success: false,
-        pending: true,
-        status: checkoutData.status || "PENDING",
-        checkoutId,
-        _debug: checkoutData,
-      });
-    }
-
-    // Only treat FAILED status as actual failure
-    if (isFailed) {
-      // Extract transaction failure reason if available
-      let failureReason = checkoutData.status;
-      if (checkoutData.transactions && checkoutData.transactions.length > 0) {
-        const lastTxn = checkoutData.transactions[checkoutData.transactions.length - 1];
-        if (lastTxn.status) failureReason = lastTxn.status;
-        if (lastTxn.failure_reason) failureReason += `: ${lastTxn.failure_reason}`;
-      }
-
-      console.log("[check-status] Payment failed. Reason:", failureReason);
-      console.log("[check-status] Full checkout data:", JSON.stringify(checkoutData, null, 2));
-
-      return NextResponse.json({
-        success: false,
-        error: `Payment ${failureReason}`,
-        checkoutId,
-        status: checkoutData.status,
-        details: checkoutData,
-      });
-    }
-
-    // Unknown status - treat as pending to avoid false failures
-    console.log("[check-status] Unknown status, treating as pending:", checkoutData.status);
+    // Payment failed or other status
     return NextResponse.json({
       success: false,
-      pending: true,
-      status: checkoutData.status,
+      error: `Payment ${checkoutData.status || "failed"}`,
       checkoutId,
+      status: checkoutData.status,
+      details: checkoutData,
     });
   } catch (e) {
     console.error("[check-status] error:", e);
