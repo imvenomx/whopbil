@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@vercel/kv": "^2.0.0",
-    "@whop/checkout": "^0.0.52",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
