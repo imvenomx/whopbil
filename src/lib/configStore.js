@@ -171,11 +171,8 @@ export async function addCheckoutPage(page) {
     id: Date.now().toString(),
     name: page.name || "Unnamed Page",
     slug: page.slug || `checkout-${Date.now()}`,
-    price: normalizePrice(page.price),
-    productName: page.productName || "Product",
-    productImage: page.productImage || "",
-    interval: page.interval || "monthly",
-    intervalCount: page.intervalCount || 1,
+    whopPlanId: page.whopPlanId || "",
+    whopEnvironment: page.whopEnvironment || "production",
     createdAt: new Date().toISOString(),
   };
   pages.push(newPage);
@@ -187,9 +184,6 @@ export async function updateCheckoutPage(id, updates) {
   const pages = await getCheckoutPages();
   const index = pages.findIndex((p) => p.id === id);
   if (index === -1) throw new Error("Checkout page not found");
-  if (updates.price) {
-    updates.price = normalizePrice(updates.price);
-  }
   pages[index] = { ...pages[index], ...updates };
   await saveCheckoutPages(pages);
   return pages[index];

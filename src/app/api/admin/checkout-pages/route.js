@@ -52,11 +52,8 @@ export async function POST(request) {
     const page = await addCheckoutPage({
       name: body.name,
       slug: body.slug,
-      price: body.price,
-      productName: body.productName,
-      productImage: body.productImage,
-      interval: body.interval || "monthly",
-      intervalCount: parseInt(body.intervalCount, 10) || 1,
+      whopPlanId: body.whopPlanId || "",
+      whopEnvironment: body.whopEnvironment || "production",
     });
 
     return NextResponse.json({ ok: true, page });
@@ -90,11 +87,8 @@ export async function PUT(request) {
     const page = await updateCheckoutPage(body.id, {
       name: body.name,
       slug: body.slug,
-      price: body.price,
-      productName: body.productName,
-      productImage: body.productImage,
-      interval: body.interval,
-      intervalCount: body.intervalCount ? parseInt(body.intervalCount, 10) : undefined,
+      whopPlanId: body.whopPlanId,
+      whopEnvironment: body.whopEnvironment,
     });
 
     return NextResponse.json({ ok: true, page });

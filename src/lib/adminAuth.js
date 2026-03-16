@@ -36,9 +36,8 @@ export function isValidAdminSessionCookieValue(cookieValue) {
 }
 
 export function isAdminRequestAuthenticated(request) {
-  const c = request?.cookies?.get
-    ? request.cookies.get(COOKIE_NAME)?.value
-    : cookies().get(COOKIE_NAME)?.value;
+  // In route handlers, always use request.cookies (synchronous)
+  const c = request?.cookies?.get?.(COOKIE_NAME)?.value;
   return isValidAdminSessionCookieValue(c);
 }
 
