@@ -232,6 +232,8 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
 
   // Check for return status from Whop redirect
   useEffect(() => {
@@ -311,6 +313,48 @@ export default function CheckoutPage() {
     })();
     return () => { cancelled = true; };
   }, [pageId]);
+
+  // Create checkout session when page config is loaded
+  useEffect(() => {
+    if (!pageConfig?.whopPlanId || sessionId) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        setSessionLoading(true);
+        const res = await fetch("/api/checkout/create-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planId: pageConfig.whopPlanId,
+            metadata: {
+              checkoutPageId: pageId,
+            },
+          }),
+        });
+
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (!res.ok || !data.success) {
+          console.error("[Whop] Session creation failed:", data);
+          setError(data.error || "Failed to initialize payment");
+          return;
+        }
+
+        console.log("[Whop] Session created:", data.sessionId);
+        setSessionId(data.sessionId);
+      } catch (e) {
+        if (!cancelled) {
+          console.error("[Whop] Session creation error:", e);
+          setError("Failed to initialize payment");
+        }
+      } finally {
+        if (!cancelled) setSessionLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [pageConfig?.whopPlanId, pageId, sessionId]);
 
   // Update Whop checkout with email/address when they change
   useEffect(() => {
@@ -585,26 +629,32 @@ export default function CheckoutPage() {
 
                 {/* Whop Checkout Embed - Payment Only */}
                 <div className="payment-card-fields">
-                  <WhopCheckoutEmbed
-                    ref={checkoutRef}
-                    planId={pageConfig.whopPlanId}
-                    returnUrl={getReturnUrl()}
-                    hideEmail={true}
-                    hideAddressForm={true}
-                    hidePrice={true}
-                    hideTermsAndConditions={false}
-                    theme="light"
-                    onComplete={handleComplete}
-                    prefill={{
-                      email: email || undefined,
-                    }}
-                    containerPadding={0}
-                    fallback={
-                      <div style={{ padding: "20px", textAlign: "center", color: "#737373" }}>
-                        Loading payment form...
-                      </div>
-                    }
-                  />
+                  {sessionId ? (
+                    <WhopCheckoutEmbed
+                      ref={checkoutRef}
+                      sessionId={sessionId}
+                      returnUrl={getReturnUrl()}
+                      hideEmail={true}
+                      hideAddressForm={true}
+                      hidePrice={true}
+                      hideTermsAndConditions={false}
+                      theme="light"
+                      onComplete={handleComplete}
+                      prefill={{
+                        email: email || undefined,
+                      }}
+                      containerPadding={0}
+                      fallback={
+                        <div style={{ padding: "20px", textAlign: "center", color: "#737373" }}>
+                          Loading payment form...
+                        </div>
+                      }
+                    />
+                  ) : (
+                    <div style={{ padding: "20px", textAlign: "center", color: "#737373" }}>
+                      {sessionLoading ? "Initializing payment..." : "Loading payment form..."}
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
