@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import { WhopCheckoutEmbed } from "@whop/checkout/react";
 
 // Internationalization strings
 const I18N = {
@@ -222,20 +223,14 @@ const ChevronIcon = ({ down }) => (
 export default function CheckoutPage() {
   const params = useParams();
   const pageId = params.id;
+  const checkoutRef = useRef(null);
 
   // Page state
   const [pageConfig, setPageConfig] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-
-  // Whop SDK state
-  const [whopReady, setWhopReady] = useState(false);
-  const [cardComplete, setCardComplete] = useState(false);
-  const cardElementRef = useRef(null);
-  const whopInstanceRef = useRef(null);
 
   // Language
   const [lang, setLang] = useState("en");
@@ -257,10 +252,6 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("");
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
-
-  // Form fields - Payment (only name on card is still needed)
-  const [cardName, setCardName] = useState("");
-  const [useSameAddress, setUseSameAddress] = useState(true);
 
   // Discount code
   const [discountCode, setDiscountCode] = useState("");
@@ -310,161 +301,30 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, [pageId]);
 
-  // Load Whop SDK and initialize card element
+  // Update Whop checkout with email/address when they change
   useEffect(() => {
-    if (!pageConfig) return;
+    if (checkoutRef.current && email) {
+      checkoutRef.current.setEmail(email);
+    }
+  }, [email]);
 
-    // Load Whop Frosted SDK script
-    const script = document.createElement("script");
-    script.src = "https://cdn.whop.com/scripts/frosted.js";
-    script.async = true;
-    script.onload = () => {
-      console.log("[Whop] SDK loaded");
-      if (cardElementRef.current) {
-        initializeWhopCard();
-      }
-    };
-    script.onerror = () => {
-      console.error("[Whop] Failed to load SDK");
-      setError("Failed to load payment form. Please refresh the page.");
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-    };
-  }, [pageConfig]);
-
-  // Initialize Whop card element when container is ready
   useEffect(() => {
-    if (window.Frosted && cardElementRef.current && !whopInstanceRef.current && pageConfig) {
-      initializeWhopCard();
-    }
-  }, [cardElementRef.current, pageConfig]);
-
-  const initializeWhopCard = async () => {
-    if (!window.Frosted || !cardElementRef.current) {
-      console.log("[Whop] SDK or container not ready");
-      return;
-    }
-
-    if (whopInstanceRef.current) {
-      console.log("[Whop] Already initialized");
-      return;
-    }
-
-    try {
-      console.log("[Whop] Initializing card element...");
-
-      // Initialize Frosted with the plan ID from page config
-      const frosted = window.Frosted.init({
-        planId: pageConfig.whopPlanId,
+    if (checkoutRef.current && address) {
+      checkoutRef.current.setAddress({
+        line1: address,
+        line2: apartment || undefined,
+        city: city,
+        state: province,
+        postal_code: postalCode,
+        country: country,
       });
-
-      // Create card element
-      const cardElement = frosted.createCardElement({
-        style: {
-          base: {
-            fontSize: "16px",
-            color: "#333",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            "::placeholder": {
-              color: "#737373",
-            },
-          },
-          invalid: {
-            color: "#dc3545",
-          },
-        },
-      });
-
-      // Mount to DOM
-      cardElement.mount(cardElementRef.current);
-
-      // Listen for changes
-      cardElement.on("change", (event) => {
-        console.log("[Whop] Card change:", event);
-        setCardComplete(event.complete);
-        if (event.error) {
-          setError(event.error.message);
-        } else {
-          setError(null);
-        }
-      });
-
-      cardElement.on("ready", () => {
-        console.log("[Whop] Card element ready");
-        setWhopReady(true);
-      });
-
-      whopInstanceRef.current = { frosted, cardElement };
-      setWhopReady(true);
-
-      console.log("[Whop] Card element initialized successfully");
-    } catch (err) {
-      console.error("[Whop] Failed to initialize card element:", err);
-      setError("Failed to load payment form. Please refresh the page.");
     }
-  };
+  }, [address, apartment, city, province, postalCode, country]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-
-    // Validation
-    if (!email || !email.includes("@")) {
-      setError("Please enter a valid email address");
-      return;
-    }
-    if (!cardName.trim()) {
-      setError("Please enter the name on card");
-      return;
-    }
-    if (!whopInstanceRef.current) {
-      setError("Payment form not ready. Please refresh the page.");
-      return;
-    }
-
-    setProcessing(true);
-
-    try {
-      const { frosted, cardElement } = whopInstanceRef.current;
-
-      // Create payment using Whop SDK
-      const result = await frosted.createPayment({
-        card: cardElement,
-        billingDetails: {
-          name: cardName.trim(),
-          email: email.trim(),
-          address: useSameAddress ? {
-            line1: address,
-            line2: apartment,
-            city: city,
-            state: province,
-            postalCode: postalCode,
-            country: country,
-          } : undefined,
-        },
-      });
-
-      console.log("[Whop] Payment result:", result);
-
-      if (result.error) {
-        setError(result.error.message);
-        setProcessing(false);
-        return;
-      }
-
-      // Payment successful
-      setPaymentSuccess(true);
-    } catch (err) {
-      console.error("[Whop] Payment error:", err);
-      setError(`Error: ${err.message}`);
-    } finally {
-      setProcessing(false);
-    }
+  // Handle payment complete
+  const handleComplete = (planId, receiptId) => {
+    console.log("[Whop] Payment complete:", { planId, receiptId });
+    setPaymentSuccess(true);
   };
 
   // Not Found page
@@ -502,6 +362,18 @@ export default function CheckoutPage() {
     );
   }
 
+  // Check if Whop Plan ID is configured
+  if (!pageConfig?.whopPlanId) {
+    return (
+      <main className="not-found-page">
+        <h1 className="not-found-title">Checkout Not Configured</h1>
+        <p className="not-found-message">
+          This checkout page needs a Whop Plan ID to be configured.
+        </p>
+      </main>
+    );
+  }
+
   // Main checkout page
   return (
     <div className="checkout-container">
@@ -522,7 +394,7 @@ export default function CheckoutPage() {
             </nav>
           </header>
 
-          <form onSubmit={handleSubmit}>
+          <div>
             {/* Error message */}
             {error && (
               <div className="error-message" style={{ whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: "12px" }}>
@@ -692,63 +564,29 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Whop Card Element */}
+                {/* Whop Checkout Embed - Payment Only */}
                 <div className="payment-card-fields">
-                  <div className="form-row">
-                    <div
-                      ref={cardElementRef}
-                      className="whop-card-element"
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #d9d9d9",
-                        borderRadius: "4px",
-                        backgroundColor: "#fff",
-                        minHeight: "44px",
-                      }}
-                    >
-                      {!whopReady && (
-                        <span style={{ color: "#737373", fontSize: "14px" }}>
-                          Loading secure payment form...
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder={t.name_on_card_placeholder}
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      autoComplete="cc-name"
-                    />
-                  </div>
-
-                  <div className="form-row" style={{ marginTop: 4 }}>
-                    <label className="form-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={useSameAddress}
-                        onChange={(e) => setUseSameAddress(e.target.checked)}
-                      />
-                      <span className="form-checkbox-label">{t.billing_same}</span>
-                    </label>
-                  </div>
+                  <WhopCheckoutEmbed
+                    ref={checkoutRef}
+                    planId={pageConfig.whopPlanId}
+                    hideEmail={true}
+                    hideAddressForm={true}
+                    hidePrice={true}
+                    hideTermsAndConditions={true}
+                    theme="light"
+                    onComplete={handleComplete}
+                    prefill={{
+                      email: email || undefined,
+                    }}
+                    fallback={
+                      <div style={{ padding: "20px", textAlign: "center", color: "#737373" }}>
+                        Loading payment form...
+                      </div>
+                    }
+                  />
                 </div>
               </div>
             </section>
-
-            <div className="divider" />
-
-            {/* Pay Button */}
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={processing || !whopReady}
-            >
-              {processing ? t.processing : t.pay_now}
-            </button>
 
             <p className="secure-notice">
               <LockIcon />
@@ -763,7 +601,7 @@ export default function CheckoutPage() {
                 <a href="#" className="footer-link">Return/Shipping policy</a>
               </div>
             </footer>
-          </form>
+          </div>
         </div>
       </main>
 
