@@ -572,12 +572,13 @@ export default function CheckoutPage() {
                     hideEmail={true}
                     hideAddressForm={true}
                     hidePrice={true}
-                    hideTermsAndConditions={true}
+                    hideTermsAndConditions={false}
                     theme="light"
                     onComplete={handleComplete}
                     prefill={{
                       email: email || undefined,
                     }}
+                    containerPadding={0}
                     fallback={
                       <div style={{ padding: "20px", textAlign: "center", color: "#737373" }}>
                         Loading payment form...

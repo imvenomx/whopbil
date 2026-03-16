@@ -398,9 +398,14 @@ body {
 
 /* Card fields inside payment method */
 .payment-card-fields {
-  padding: 16px;
+  padding: 0;
   background-color: #f7f9fa;
   border-top: 1px solid var(--color-border);
+}
+
+.payment-card-fields iframe {
+  width: 100% !important;
+  min-height: 400px;
 }
 
 .card-number-wrapper {
