@@ -634,16 +634,22 @@ export default function CheckoutPage() {
                       ref={checkoutRef}
                       sessionId={sessionId}
                       returnUrl={getReturnUrl()}
+                      skipRedirect={true}
                       hideEmail={true}
                       hideAddressForm={true}
                       hidePrice={true}
                       hideTermsAndConditions={false}
                       theme="light"
                       onComplete={handleComplete}
+                      onStateChange={(state) => {
+                        console.log("[Whop] Checkout state:", state);
+                      }}
                       prefill={{
                         email: email || undefined,
                       }}
-                      containerPadding={0}
+                      styles={{
+                        containerPadding: { top: 0, bottom: 0, left: 0, right: 0 }
+                      }}
                       fallback={
                         <div style={{ padding: "20px", textAlign: "center", color: "#737373" }}>
                           Loading payment form...
