@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { WhopCheckoutEmbed } from "@whop/checkout/react";
 
 // Internationalization strings
@@ -222,6 +222,7 @@ const ChevronIcon = ({ down }) => (
 
 export default function CheckoutPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const pageId = params.id;
   const checkoutRef = useRef(null);
 
@@ -231,6 +232,16 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  // Check for return status from Whop redirect
+  useEffect(() => {
+    const status = searchParams.get("status");
+    if (status === "success") {
+      setPaymentSuccess(true);
+    } else if (status === "error") {
+      setError("Payment failed. Please try again.");
+    }
+  }, [searchParams]);
 
   // Language
   const [lang, setLang] = useState("en");
@@ -325,6 +336,14 @@ export default function CheckoutPage() {
   const handleComplete = (planId, receiptId) => {
     console.log("[Whop] Payment complete:", { planId, receiptId });
     setPaymentSuccess(true);
+  };
+
+  // Get return URL for redirects (needed for 3DS and external payment providers)
+  const getReturnUrl = () => {
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}/checkout/${pageId}?status=success`;
+    }
+    return `/checkout/${pageId}?status=success`;
   };
 
   // Not Found page
@@ -569,6 +588,7 @@ export default function CheckoutPage() {
                   <WhopCheckoutEmbed
                     ref={checkoutRef}
                     planId={pageConfig.whopPlanId}
+                    returnUrl={getReturnUrl()}
                     hideEmail={true}
                     hideAddressForm={true}
                     hidePrice={true}
