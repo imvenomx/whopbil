@@ -7,9 +7,11 @@ import { WhopCheckoutEmbed, useCheckoutEmbedControls } from "@whop/checkout/reac
 // Internationalization strings
 const I18N = {
   en: {
+    checkout: "Checkout",
     contact: "Contact",
     contact_subtitle: "We'll use this to send your order confirmation.",
     email_placeholder: "Email",
+    phone_placeholder: "Phone number",
     marketing_opt_in: "Email me with news and offers",
     delivery: "Delivery",
     country_placeholder: "Country/Region",
@@ -20,8 +22,12 @@ const I18N = {
     city_placeholder: "City",
     province_placeholder: "Province",
     postal_placeholder: "Postal code",
+    shipping_method: "Shipping method",
+    shipping_method_title: "Royal Mail Tracked",
+    shipping_method_desc: "Delivery 1-3 Days",
     payment: "Payment",
     payment_subtitle: "All transactions are secure and encrypted.",
+    complete_order: "Complete order",
     credit_card: "Credit card",
     card_number_placeholder: "Card number",
     expiry_placeholder: "Expiration date (MM / YY)",
@@ -39,11 +45,20 @@ const I18N = {
     free: "Free",
     processing: "Processing...",
     secure_payment: "Your payment is secured with SSL encryption",
+    shipping_protection: "Shipping Protection",
+    shipping_protection_desc: "Against loss, theft & damage",
+    trust_delivery_title: "Tracked Delivery Guaranteed",
+    trust_delivery_desc: "Delivered to your home with Royal Mail using Tracked Delivery Guaranteed",
+    trust_guarantee_title: "30 Days Money Back Guarantee",
+    trust_guarantee_desc: "Change of mind? Exchange or return easily within the first 30 days",
+    customer_reviews: "Customer Reviews",
   },
   it: {
+    checkout: "Cassa",
     contact: "Contatti",
     contact_subtitle: "Useremo queste informazioni per inviarti la conferma dell'ordine.",
     email_placeholder: "E-mail",
+    phone_placeholder: "Numero di telefono",
     marketing_opt_in: "Inviami novità e offerte via email",
     delivery: "Consegna",
     country_placeholder: "Paese/Regione",
@@ -54,8 +69,12 @@ const I18N = {
     city_placeholder: "Città",
     province_placeholder: "Provincia",
     postal_placeholder: "CAP",
+    shipping_method: "Metodo di spedizione",
+    shipping_method_title: "Royal Mail Tracked",
+    shipping_method_desc: "Consegna 1-3 giorni",
     payment: "Pagamento",
     payment_subtitle: "Tutte le transazioni sono sicure e crittografate.",
+    complete_order: "Completa l'ordine",
     credit_card: "Carta di credito",
     card_number_placeholder: "Numero carta",
     expiry_placeholder: "Data di scadenza (MM / AA)",
@@ -73,11 +92,20 @@ const I18N = {
     free: "Gratis",
     processing: "Elaborazione...",
     secure_payment: "Il tuo pagamento è protetto con crittografia SSL",
+    shipping_protection: "Protezione spedizione",
+    shipping_protection_desc: "Contro perdita, furto e danni",
+    trust_delivery_title: "Consegna tracciata garantita",
+    trust_delivery_desc: "Consegnato a casa tua con Royal Mail Tracked",
+    trust_guarantee_title: "Garanzia rimborso 30 giorni",
+    trust_guarantee_desc: "Cambiato idea? Scambia o restituisci facilmente entro 30 giorni",
+    customer_reviews: "Recensioni clienti",
   },
   fr: {
+    checkout: "Paiement",
     contact: "Coordonnées",
     contact_subtitle: "Nous utiliserons ces informations pour vous envoyer la confirmation de commande.",
     email_placeholder: "E-mail",
+    phone_placeholder: "Numéro de téléphone",
     marketing_opt_in: "M'envoyer des offres et des actualités par e-mail",
     delivery: "Livraison",
     country_placeholder: "Pays/Région",
@@ -88,8 +116,12 @@ const I18N = {
     city_placeholder: "Ville",
     province_placeholder: "Province",
     postal_placeholder: "Code postal",
+    shipping_method: "Mode de livraison",
+    shipping_method_title: "Royal Mail Tracked",
+    shipping_method_desc: "Livraison 1-3 jours",
     payment: "Paiement",
     payment_subtitle: "Toutes les transactions sont sécurisées et cryptées.",
+    complete_order: "Finaliser la commande",
     credit_card: "Carte de crédit",
     card_number_placeholder: "Numéro de carte",
     expiry_placeholder: "Date d'expiration (MM / AA)",
@@ -107,11 +139,20 @@ const I18N = {
     free: "Gratuit",
     processing: "Traitement...",
     secure_payment: "Votre paiement est sécurisé par cryptage SSL",
+    shipping_protection: "Protection livraison",
+    shipping_protection_desc: "Contre perte, vol et dommages",
+    trust_delivery_title: "Livraison suivie garantie",
+    trust_delivery_desc: "Livré chez vous avec Royal Mail Tracked",
+    trust_guarantee_title: "Garantie remboursement 30 jours",
+    trust_guarantee_desc: "Changement d'avis ? Échangez ou retournez facilement sous 30 jours",
+    customer_reviews: "Avis clients",
   },
   de: {
+    checkout: "Kasse",
     contact: "Kontakt",
     contact_subtitle: "Wir verwenden diese Informationen, um Ihnen die Bestellbestätigung zu senden.",
     email_placeholder: "E-Mail",
+    phone_placeholder: "Telefonnummer",
     marketing_opt_in: "E-Mails mit Neuigkeiten und Angeboten erhalten",
     delivery: "Lieferung",
     country_placeholder: "Land/Region",
@@ -122,8 +163,12 @@ const I18N = {
     city_placeholder: "Stadt",
     province_placeholder: "Bundesland",
     postal_placeholder: "Postleitzahl",
+    shipping_method: "Versandart",
+    shipping_method_title: "Royal Mail Tracked",
+    shipping_method_desc: "Lieferung 1-3 Tage",
     payment: "Zahlung",
     payment_subtitle: "Alle Transaktionen sind sicher und verschlüsselt.",
+    complete_order: "Bestellung abschließen",
     credit_card: "Kreditkarte",
     card_number_placeholder: "Kartennummer",
     expiry_placeholder: "Ablaufdatum (MM / JJ)",
@@ -141,6 +186,13 @@ const I18N = {
     free: "Kostenlos",
     processing: "Verarbeitung...",
     secure_payment: "Ihre Zahlung ist durch SSL-Verschlüsselung geschützt",
+    shipping_protection: "Versandschutz",
+    shipping_protection_desc: "Gegen Verlust, Diebstahl & Beschädigung",
+    trust_delivery_title: "Sendungsverfolgung garantiert",
+    trust_delivery_desc: "Lieferung mit Royal Mail Tracked direkt zu Ihnen nach Hause",
+    trust_guarantee_title: "30 Tage Geld-zurück-Garantie",
+    trust_guarantee_desc: "Meinungsänderung? Einfach innerhalb von 30 Tagen umtauschen oder zurückgeben",
+    customer_reviews: "Kundenbewertungen",
   },
 };
 
@@ -567,8 +619,8 @@ export default function CheckoutPage() {
             </div>
 
             <div className="thankyou-section">
-              <h3 className="thankyou-section-title">Shipping method</h3>
-              <p className="thankyou-shipping">Royal Mail Tracked - Delivery 1-3 Days</p>
+              <h3 className="thankyou-section-title">{t.shipping_method}</h3>
+              <p className="thankyou-shipping">{t.shipping_method_title} - {t.shipping_method_desc}</p>
             </div>
           </div>
         </main>
@@ -656,7 +708,7 @@ export default function CheckoutPage() {
     <div className="checkout-container">
       {/* Mobile-only Checkout title above gray summary */}
       <div className="mobile-checkout-title mobile-only">
-        <span className="checkout-logo">Checkout</span>
+        <span className="checkout-logo">{t.checkout}</span>
       </div>
 
       {/* Left Column - Form */}
@@ -664,7 +716,7 @@ export default function CheckoutPage() {
         <div className="checkout-main-inner">
           {/* Logo / Breadcrumbs */}
           <header className="checkout-header">
-            <span className="checkout-logo">Checkout</span>
+            <span className="checkout-logo">{t.checkout}</span>
           </header>
 
           {/* Countdown alert */}
@@ -741,7 +793,7 @@ export default function CheckoutPage() {
                       onChange={(e) => setPhone(e.target.value)}
                       autoComplete="one-time-code"
                     />
-                    <label className="float-label-text">Phone number</label>
+                    <label className="float-label-text">{t.phone_placeholder}</label>
                   </div>
                 </div>
               </div>
@@ -855,14 +907,14 @@ export default function CheckoutPage() {
 
             {/* Shipping Method Section */}
             <section className="checkout-section">
-              <h2 className="section-title" style={{ marginBottom: 16 }}>Shipping method</h2>
+              <h2 className="section-title" style={{ marginBottom: 16 }}>{t.shipping_method}</h2>
               <div className="shipping-method-card selected">
                 <div className="shipping-method-radio">
                   <input type="radio" name="shipping-method" checked readOnly />
                 </div>
                 <div className="shipping-method-info">
-                  <span className="shipping-method-title">Royal Mail Tracked</span>
-                  <span className="shipping-method-desc">Delivery 1-3 Days</span>
+                  <span className="shipping-method-title">{t.shipping_method_title}</span>
+                  <span className="shipping-method-desc">{t.shipping_method_desc}</span>
                 </div>
                 <span className="shipping-method-price">FREE</span>
               </div>
@@ -921,7 +973,7 @@ export default function CheckoutPage() {
               onClick={handleSubmitOrder}
             >
               <LockIcon />
-              {checkoutState === "disabled" ? t.processing : "Complete order"}
+              {checkoutState === "disabled" ? t.processing : t.complete_order}
             </button>
 
             <p className="secure-notice">
@@ -988,8 +1040,8 @@ export default function CheckoutPage() {
                 />
               </div>
               <div className="product-details">
-                <p className="product-name">Shipping Protection</p>
-                <p className="product-variant">Against loss, theft & damage</p>
+                <p className="product-name">{t.shipping_protection}</p>
+                <p className="product-variant">{t.shipping_protection_desc}</p>
               </div>
               <span className="product-price">{t.free}</span>
             </div>
@@ -1044,20 +1096,20 @@ export default function CheckoutPage() {
                 <div className="trust-badge-card">
                   <div className="trust-badge-icon"><TruckIcon /></div>
                   <div className="trust-badge-text">
-                    <span className="trust-badge-title">Tracked Delivery Guaranteed</span>
-                    <span className="trust-badge-desc">Delivered to your home with Royal Mail using Tracked Delivery Guaranteed</span>
+                    <span className="trust-badge-title">{t.trust_delivery_title}</span>
+                    <span className="trust-badge-desc">{t.trust_delivery_desc}</span>
                   </div>
                 </div>
                 <div className="trust-badge-card">
                   <div className="trust-badge-icon"><ShieldIcon /></div>
                   <div className="trust-badge-text">
-                    <span className="trust-badge-title">30 Days Money Back Guarantee</span>
-                    <span className="trust-badge-desc">Change of mind? Exchange or return easily within the first 30 days</span>
+                    <span className="trust-badge-title">{t.trust_guarantee_title}</span>
+                    <span className="trust-badge-desc">{t.trust_guarantee_desc}</span>
                   </div>
                 </div>
               </div>
               <div className="customer-reviews">
-                <h3 className="reviews-title">Customer Reviews</h3>
+                <h3 className="reviews-title">{t.customer_reviews}</h3>
                 {REVIEWS.map((review, i) => (
                   <div className="review-card" key={i}>
                     <div className="review-stars">
@@ -1094,13 +1146,13 @@ export default function CheckoutPage() {
             <div className="trust-badge-card">
               <div className="trust-badge-icon"><ShieldIcon /></div>
               <div className="trust-badge-text">
-                <span className="trust-badge-title">30 Days Money Back Guarantee</span>
+                <span className="trust-badge-title">{t.trust_guarantee_title}</span>
                 <span className="trust-badge-desc">Change of mind? Exchange or return easily within the first 30 days</span>
               </div>
             </div>
           </div>
           <div className="customer-reviews">
-            <h3 className="reviews-title">Customer Reviews</h3>
+            <h3 className="reviews-title">{t.customer_reviews}</h3>
             {REVIEWS.map((review, i) => (
               <div className="review-card" key={i}>
                 <div className="review-stars">
