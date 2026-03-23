@@ -4,6 +4,9 @@ import Script from "next/script";
 export const metadata = {
   title: "Checkout",
   description: "Checkout",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({ children }) {
