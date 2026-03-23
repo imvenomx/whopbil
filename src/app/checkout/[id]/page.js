@@ -450,19 +450,122 @@ export default function CheckoutPage() {
     );
   }
 
-  // Success page
-  if (paymentSuccess) {
+  // Thank you page - same layout as checkout, sidebar stays, left column changes
+  if (paymentSuccess && pageConfig) {
+    const countryNames = { IT: "Italy", FR: "France", DE: "Germany", ES: "Spain", NL: "Netherlands", AT: "Austria", BE: "Belgium", PT: "Portugal", CH: "Switzerland", GB: "United Kingdom" };
     return (
-      <main className="success-page">
-        <div className="success-icon">
-          <CheckIcon />
-        </div>
-        <h1 className="success-title">Payment Successful!</h1>
-        <p className="success-message">
-          Thank you for your subscription. Your card has been saved for future billing.
-          You will receive a confirmation email at <strong>{email}</strong>
-        </p>
-      </main>
+      <div className="checkout-container">
+        <main className="checkout-main">
+          <div className="checkout-main-inner">
+            <header className="checkout-header">
+              <span className="checkout-logo">Thank you</span>
+            </header>
+
+            <div className="thankyou-confirmation">
+              <div className="thankyou-icon">
+                <CheckIcon />
+              </div>
+              <div className="thankyou-confirmation-text">
+                <p className="thankyou-subtitle">Order confirmed</p>
+                <h1 className="thankyou-title">Thank you for your purchase!</h1>
+                <p className="thankyou-desc">A confirmation email has been sent to <strong>{email}</strong></p>
+              </div>
+            </div>
+
+            <div className="thankyou-section">
+              <h3 className="thankyou-section-title">Order details</h3>
+              <div className="thankyou-details-grid">
+                <div className="thankyou-detail">
+                  <span className="thankyou-detail-label">Product</span>
+                  <span className="thankyou-detail-value">{pageConfig?.productName || "Product"}</span>
+                </div>
+                <div className="thankyou-detail">
+                  <span className="thankyou-detail-label">Amount paid</span>
+                  <span className="thankyou-detail-value">{displayPrice}</span>
+                </div>
+                <div className="thankyou-detail">
+                  <span className="thankyou-detail-label">Email</span>
+                  <span className="thankyou-detail-value">{email}</span>
+                </div>
+                <div className="thankyou-detail">
+                  <span className="thankyou-detail-label">Payment method</span>
+                  <span className="thankyou-detail-value">Credit card</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="thankyou-section">
+              <h3 className="thankyou-section-title">Delivery address</h3>
+              <div className="thankyou-address">
+                <p>{firstName} {lastName}</p>
+                <p>{address}{apartment ? `, ${apartment}` : ""}</p>
+                <p>{city}{province ? `, ${province}` : ""} {postalCode}</p>
+                <p>{countryNames[country] || country}</p>
+                {phone && <p>{PHONE_COUNTRIES.find(c => c.code === phoneCountry)?.dial} {phone}</p>}
+              </div>
+            </div>
+
+            <div className="thankyou-section">
+              <h3 className="thankyou-section-title">Shipping method</h3>
+              <p className="thankyou-shipping">Royal Mail Tracked - Delivery 1-3 Days</p>
+            </div>
+          </div>
+        </main>
+
+        <aside className="checkout-sidebar">
+          <div className="checkout-sidebar-inner">
+            <div className="summary-toggle" onClick={() => setSummaryOpen(!summaryOpen)}>
+              <div className="summary-toggle-left">
+                <CartIcon />
+                <span className="summary-toggle-text">{summaryOpen ? "Hide order summary" : "Show order summary"}</span>
+                <ChevronIcon down={summaryOpen} />
+              </div>
+              <span className="summary-toggle-price">{displayPrice}</span>
+            </div>
+            <div className={`summary-content ${summaryOpen ? "" : "collapsed"}`}>
+              <h2 className="summary-title">{t.order_summary}</h2>
+              <div className="summary-product">
+                <div className="product-thumbnail">
+                  <img src={pageConfig?.productImage || "https://cdn-icons-png.flaticon.com/512/8832/8832119.png"} alt={pageConfig?.productName || "Product"} />
+                  <span className="product-quantity-badge">1</span>
+                </div>
+                <div className="product-details">
+                  <p className="product-name">{pageConfig?.productName || "Product"}</p>
+                  <p className="product-variant">Monthly subscription</p>
+                </div>
+                <span className="product-price">{displayPrice}</span>
+              </div>
+              <div className="summary-product">
+                <div className="product-thumbnail">
+                  <img src="https://cdn.shopify.com/s/files/1/0718/8483/3026/files/default_71870f99-405f-4b04-9583-d81a1f91b5e7.png" alt="Shipping Protection" />
+                </div>
+                <div className="product-details">
+                  <p className="product-name">Shipping Protection</p>
+                  <p className="product-variant">Against loss, theft & damage</p>
+                </div>
+                <span className="product-price">{t.free}</span>
+              </div>
+              <div className="summary-totals">
+                <div className="summary-line">
+                  <span className="summary-line-label">{t.subtotal}</span>
+                  <span className="summary-line-value">{displayPrice}</span>
+                </div>
+                <div className="summary-line">
+                  <span className="summary-line-label">{t.shipping}</span>
+                  <span className="summary-line-value">{t.free}</span>
+                </div>
+              </div>
+              <div className="summary-total">
+                <span className="summary-total-label">{t.total}</span>
+                <div className="summary-total-value">
+                  <span className="summary-total-currency">EUR</span>
+                  <span className="summary-total-amount">{displayPrice}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
     );
   }
 
