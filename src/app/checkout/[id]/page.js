@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, usePathname } from "next/navigation";
 import { WhopCheckoutEmbed, useCheckoutEmbedControls } from "@whop/checkout/react";
 
 // Internationalization strings
@@ -273,8 +273,10 @@ const ChevronIcon = ({ down }) => (
 export default function CheckoutPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const pageId = params.id;
   const checkoutRef = useCheckoutEmbedControls();
+  const isGerman = pathname.startsWith("/de/");
 
   // Page state
   const [pageConfig, setPageConfig] = useState(null);
@@ -305,7 +307,7 @@ export default function CheckoutPage() {
   }, [searchParams]);
 
   // Language
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState(isGerman ? "de" : "en");
   const t = I18N[lang] || I18N.en;
 
   // Mobile summary toggle
@@ -374,8 +376,12 @@ export default function CheckoutPage() {
   const displayPrice = pageConfig?.price ? `€${pageConfig.price}` : "...";
   const hasShippingAddress = address.trim() !== "";
 
-  // Load language
+  // Load language (skip IP detection if forced by URL)
   useEffect(() => {
+    if (isGerman) {
+      document.documentElement.lang = "de";
+      return;
+    }
     let cancelled = false;
     (async () => {
       const ipLang = await detectLangByIP();
@@ -387,7 +393,7 @@ export default function CheckoutPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [isGerman]);
 
   // Load page config
   useEffect(() => {

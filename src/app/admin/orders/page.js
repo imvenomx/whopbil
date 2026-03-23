@@ -52,6 +52,28 @@ export default function OrdersPage() {
             </div>
           </header>
 
+          {/* Stats */}
+          <div style={s.statsGrid}>
+            <div style={s.statCard}>
+              <div style={s.statIcon}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <p style={s.statLabel}>Total Orders</p>
+                <p style={s.statValue}>{orders.length}</p>
+              </div>
+            </div>
+            <div style={s.statCard}>
+              <div style={{ ...s.statIcon, backgroundColor: "rgba(34,197,94,0.1)", color: "#22c55e" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <div>
+                <p style={s.statLabel}>Total Earnings</p>
+                <p style={{ ...s.statValue, color: "#22c55e" }}>€{orders.reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0).toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+
           {orders.length === 0 ? (
             <div style={s.empty}>
               <h3 style={s.emptyTitle}>No orders yet</h3>
@@ -125,7 +147,12 @@ const s = {
   sidebarDesc: { margin: 0, fontSize: 14, color: "#71717a" },
   main: { flex: 1, marginLeft: 280, minHeight: "100vh" },
   wrapper: { maxWidth: 900, margin: "0 auto", padding: 40 },
-  header: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32 },
+  header: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 },
+  statsGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 28 },
+  statCard: { display: "flex", alignItems: "center", gap: 14, padding: "18px 20px", backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 12 },
+  statIcon: { width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(99,102,241,0.1)", borderRadius: 10, color: "#6366f1" },
+  statLabel: { margin: "0 0 2px", fontSize: 12, color: "#71717a" },
+  statValue: { margin: 0, fontSize: 22, fontWeight: 700, color: "#fafafa" },
   title: { margin: "0 0 4px", fontSize: 28, fontWeight: 700, color: "#fafafa" },
   subtitle: { margin: 0, fontSize: 14, color: "#71717a" },
   empty: { display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 20px", backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 12, textAlign: "center" },
