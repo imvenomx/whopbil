@@ -173,6 +173,9 @@ export async function addCheckoutPage(page) {
     slug: page.slug || `checkout-${Date.now()}`,
     whopPlanId: page.whopPlanId || "",
     whopEnvironment: page.whopEnvironment || "production",
+    price: page.price || "",
+    productName: page.productName || "",
+    productImage: page.productImage || "",
     createdAt: new Date().toISOString(),
   };
   pages.push(newPage);

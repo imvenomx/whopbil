@@ -65,6 +65,9 @@ export default function CheckoutPagesPage() {
     slug: "",
     whopPlanId: "",
     whopEnvironment: "production",
+    price: "",
+    productName: "",
+    productImage: "",
   });
 
   async function loadPages() {
@@ -159,6 +162,9 @@ export default function CheckoutPagesPage() {
       slug: page.slug || "",
       whopPlanId: page.whopPlanId || "",
       whopEnvironment: page.whopEnvironment || "production",
+      price: page.price || "",
+      productName: page.productName || "",
+      productImage: page.productImage || "",
     });
     setShowForm(true);
   }
@@ -171,6 +177,9 @@ export default function CheckoutPagesPage() {
       slug: "",
       whopPlanId: "",
       whopEnvironment: "production",
+      price: "",
+      productName: "",
+      productImage: "",
     });
   }
 
@@ -323,6 +332,45 @@ export default function CheckoutPagesPage() {
                   </div>
                 </div>
 
+                <div style={styles.formSection}>
+                  <h3 style={styles.formSectionTitle}>Product Details</h3>
+                  <div style={styles.formGrid}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Price *</label>
+                      <input
+                        type="text"
+                        value={form.price}
+                        onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                        style={styles.input}
+                        placeholder="e.g., 49.99"
+                      />
+                      <p style={styles.hint}>Display price (e.g., 49.99)</p>
+                    </div>
+
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Product Name</label>
+                      <input
+                        type="text"
+                        value={form.productName}
+                        onChange={(e) => setForm((f) => ({ ...f, productName: e.target.value }))}
+                        style={styles.input}
+                        placeholder="e.g., Premium Package"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ ...styles.formGroup, marginTop: "16px" }}>
+                    <label style={styles.label}>Product Image URL</label>
+                    <input
+                      type="text"
+                      value={form.productImage}
+                      onChange={(e) => setForm((f) => ({ ...f, productImage: e.target.value }))}
+                      style={styles.input}
+                      placeholder="https://example.com/image.png"
+                    />
+                  </div>
+                </div>
+
                 <div style={styles.formActions}>
                   <button type="button" onClick={resetForm} style={styles.secondaryButton}>
                     Cancel
@@ -361,6 +409,9 @@ export default function CheckoutPagesPage() {
                     <div style={styles.pageInfo}>
                       <h3 style={styles.pageName}>{page.name}</h3>
                       <div style={styles.pageMeta}>
+                        {page.price && (
+                          <span style={styles.pagePrice}>€{page.price}</span>
+                        )}
                         {page.whopPlanId && (
                           <span style={styles.pagePlanId}>
                             {page.whopPlanId}

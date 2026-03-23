@@ -361,8 +361,7 @@ export default function CheckoutPage() {
   const [discountCode, setDiscountCode] = useState("");
 
   // Computed values
-  const currencySymbol = pageConfig?.currency === "usd" ? "$" : pageConfig?.currency === "gbp" ? "£" : "€";
-  const displayPrice = pageConfig?.price ? `${currencySymbol}${pageConfig.price}` : "...";
+  const displayPrice = pageConfig?.price ? `€${pageConfig.price}` : "...";
   const hasShippingAddress = address.trim() !== "";
 
   // Load language
