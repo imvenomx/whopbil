@@ -254,7 +254,7 @@ const FloatingInput = ({ label, value, onChange, type = "text", required, error 
         placeholder=" "
         value={value}
         onChange={onChange}
-        autoComplete="off"
+        autoComplete="one-time-code"
         required={required}
       />
       <label className="float-label-text">{label}</label>
@@ -421,14 +421,15 @@ export default function CheckoutPage() {
       console.warn("[Whop] setEmail:", e.message);
     }
     try {
+      const fullName = `${firstName} ${lastName}`.trim();
       await checkoutRef.current.setAddress({
-        name: `${firstName} ${lastName}`.trim() || undefined,
-        line1: address || undefined,
-        line2: apartment || undefined,
-        city: city || undefined,
-        state: province || undefined,
-        postalCode: postalCode || undefined,
-        country: country || undefined,
+        name: fullName || "Customer",
+        line1: address || "N/A",
+        city: city || "N/A",
+        state: province || "",
+        postalCode: postalCode || "00000",
+        country: country || "GB",
+        ...(apartment ? { line2: apartment } : {}),
       });
     } catch (e) {
       console.warn("[Whop] setAddress:", e.message);
@@ -579,7 +580,7 @@ export default function CheckoutPage() {
                       placeholder=" "
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      autoComplete="off"
+                      autoComplete="one-time-code"
                     />
                     <label className="float-label-text">Phone number</label>
                   </div>
@@ -610,7 +611,7 @@ export default function CheckoutPage() {
                     className="form-select"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    autoComplete="off"
+                    autoComplete="one-time-code"
                   >
                     <option value="IT">Italy</option>
                     <option value="FR">France</option>
