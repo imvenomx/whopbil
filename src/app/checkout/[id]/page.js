@@ -282,12 +282,22 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [checkoutState, setCheckoutState] = useState("loading"); // "loading" | "ready" | "disabled"
+  const [orderData, setOrderData] = useState(null);
+  const [checkoutState, setCheckoutState] = useState("loading");
 
   // Check for return status from Whop redirect
   useEffect(() => {
     const status = searchParams.get("status");
-    if (status === "success") {
+    const orderId = searchParams.get("order");
+    if (status === "success" && orderId) {
+      // Load order from DB
+      fetch(`/api/orders?id=${orderId}`).then(r => r.json()).then(order => {
+        if (order && !order.error) {
+          setOrderData(order);
+          setPaymentSuccess(true);
+        }
+      }).catch(() => {});
+    } else if (status === "success") {
       setPaymentSuccess(true);
     } else if (status === "error") {
       setError("Payment failed. Please try again.");
@@ -405,9 +415,40 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, [pageId]);
 
-  // Handle payment complete
-  const handleComplete = (planId, receiptId) => {
+  // Handle payment complete - save order to DB then show thank you
+  const handleComplete = async (planId, receiptId) => {
     console.log("[Whop] Payment complete:", { planId, receiptId });
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          checkoutPageId: pageId,
+          planId,
+          receiptId,
+          email,
+          phone: `${PHONE_COUNTRIES.find(c => c.code === phoneCountry)?.dial || ""} ${phone}`.trim(),
+          firstName,
+          lastName,
+          address,
+          apartment,
+          city,
+          province,
+          postalCode,
+          country,
+          productName: pageConfig?.productName || "Product",
+          price: pageConfig?.price || "",
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.order) {
+        setOrderData(data.order);
+        // Update URL so refresh works
+        window.history.replaceState(null, "", `/checkout/${pageId}?status=success&order=${data.order.id}`);
+      }
+    } catch (e) {
+      console.warn("[Whop] Failed to save order:", e);
+    }
     setPaymentSuccess(true);
   };
 
@@ -451,7 +492,21 @@ export default function CheckoutPage() {
   }
 
   // Thank you page - same layout as checkout, sidebar stays, left column changes
-  if (paymentSuccess && pageConfig) {
+  if (paymentSuccess && (pageConfig || orderData)) {
+    const o = orderData || {};
+    const oEmail = o.email || email;
+    const oFirstName = o.firstName || firstName;
+    const oLastName = o.lastName || lastName;
+    const oAddress = o.address || address;
+    const oApartment = o.apartment || apartment;
+    const oCity = o.city || city;
+    const oProvince = o.province || province;
+    const oPostalCode = o.postalCode || postalCode;
+    const oCountry = o.country || country;
+    const oPhone = o.phone || (phone ? `${PHONE_COUNTRIES.find(c => c.code === phoneCountry)?.dial || ""} ${phone}`.trim() : "");
+    const oProductName = o.productName || pageConfig?.productName || "Product";
+    const oPrice = o.price || pageConfig?.price;
+    const oDisplayPrice = oPrice ? `€${oPrice}` : displayPrice;
     const countryNames = { IT: "Italy", FR: "France", DE: "Germany", ES: "Spain", NL: "Netherlands", AT: "Austria", BE: "Belgium", PT: "Portugal", CH: "Switzerland", GB: "United Kingdom" };
     return (
       <div className="checkout-container">
@@ -468,7 +523,7 @@ export default function CheckoutPage() {
               <div className="thankyou-confirmation-text">
                 <p className="thankyou-subtitle">Order confirmed</p>
                 <h1 className="thankyou-title">Thank you for your purchase!</h1>
-                <p className="thankyou-desc">A confirmation email has been sent to <strong>{email}</strong></p>
+                <p className="thankyou-desc">A confirmation email has been sent to <strong>{oEmail}</strong></p>
               </div>
             </div>
 
@@ -477,15 +532,15 @@ export default function CheckoutPage() {
               <div className="thankyou-details-grid">
                 <div className="thankyou-detail">
                   <span className="thankyou-detail-label">Product</span>
-                  <span className="thankyou-detail-value">{pageConfig?.productName || "Product"}</span>
+                  <span className="thankyou-detail-value">{oProductName}</span>
                 </div>
                 <div className="thankyou-detail">
                   <span className="thankyou-detail-label">Amount paid</span>
-                  <span className="thankyou-detail-value">{displayPrice}</span>
+                  <span className="thankyou-detail-value">{oDisplayPrice}</span>
                 </div>
                 <div className="thankyou-detail">
                   <span className="thankyou-detail-label">Email</span>
-                  <span className="thankyou-detail-value">{email}</span>
+                  <span className="thankyou-detail-value">{oEmail}</span>
                 </div>
                 <div className="thankyou-detail">
                   <span className="thankyou-detail-label">Payment method</span>
@@ -497,11 +552,11 @@ export default function CheckoutPage() {
             <div className="thankyou-section">
               <h3 className="thankyou-section-title">Delivery address</h3>
               <div className="thankyou-address">
-                <p>{firstName} {lastName}</p>
-                <p>{address}{apartment ? `, ${apartment}` : ""}</p>
-                <p>{city}{province ? `, ${province}` : ""} {postalCode}</p>
-                <p>{countryNames[country] || country}</p>
-                {phone && <p>{PHONE_COUNTRIES.find(c => c.code === phoneCountry)?.dial} {phone}</p>}
+                <p>{oFirstName} {oLastName}</p>
+                <p>{oAddress}{oApartment ? `, ${oApartment}` : ""}</p>
+                <p>{oCity}{oProvince ? `, ${oProvince}` : ""} {oPostalCode}</p>
+                <p>{countryNames[oCountry] || oCountry}</p>
+                {oPhone && <p>{oPhone}</p>}
               </div>
             </div>
 

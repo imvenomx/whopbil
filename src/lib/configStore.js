@@ -199,6 +199,62 @@ export async function deleteCheckoutPage(id) {
   return filtered;
 }
 
+// ==================== ORDERS ====================
+
+export async function getOrders(limit = 200) {
+  try {
+    const raw = await kv.get("orders");
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    const orders = Array.isArray(parsed) ? parsed : [];
+    return orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, limit);
+  } catch (e) {
+    console.error("[getOrders] error:", e);
+    return [];
+  }
+}
+
+export async function saveOrders(orders) {
+  try {
+    await kv.set("orders", JSON.stringify(orders));
+    return orders;
+  } catch (e) {
+    console.error("[saveOrders] error:", e);
+    throw e;
+  }
+}
+
+export async function addOrder(order) {
+  const orders = await getOrders(5000);
+  const newOrder = {
+    id: Date.now().toString(),
+    checkoutPageId: order.checkoutPageId || "",
+    planId: order.planId || "",
+    receiptId: order.receiptId || "",
+    email: order.email || "",
+    phone: order.phone || "",
+    firstName: order.firstName || "",
+    lastName: order.lastName || "",
+    address: order.address || "",
+    apartment: order.apartment || "",
+    city: order.city || "",
+    province: order.province || "",
+    postalCode: order.postalCode || "",
+    country: order.country || "",
+    productName: order.productName || "",
+    price: order.price || "",
+    status: "completed",
+    createdAt: new Date().toISOString(),
+  };
+  orders.unshift(newOrder);
+  await saveOrders(orders.slice(0, 5000));
+  return newOrder;
+}
+
+export async function getOrderById(id) {
+  const orders = await getOrders(5000);
+  return orders.find((o) => o.id === id) || null;
+}
+
 // ==================== LEGACY CONFIG (backwards compatibility) ====================
 
 export async function readConfig() {
