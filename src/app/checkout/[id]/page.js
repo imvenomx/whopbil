@@ -421,9 +421,10 @@ export default function CheckoutPage() {
       console.warn("[Whop] setEmail:", e.message);
     }
     try {
-      const fullName = `${firstName} ${lastName}`.trim();
+      const fn = firstName.trim() || "John";
+      const ln = lastName.trim() || "Doe";
       await checkoutRef.current.setAddress({
-        name: fullName || "Customer",
+        name: `${fn} ${ln}`,
         line1: address || "N/A",
         city: city || "N/A",
         state: province || "",
@@ -727,9 +728,7 @@ export default function CheckoutPage() {
                   hideSubmitButton
                   theme="light"
                   onComplete={handleComplete}
-                  onAddressValidationError={(err) => {
-                    console.error("[Whop] Address error:", err);
-                  }}
+                  onAddressValidationError={() => {}}
                   onStateChange={(state) => {
                     console.log("[Whop] state:", state);
                     setCheckoutState(state);
