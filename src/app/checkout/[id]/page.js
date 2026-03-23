@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { WhopCheckoutEmbed, useCheckoutEmbedControls } from "@whop/checkout/react";
+import { WhopCheckoutEmbed } from "@whop/checkout/react";
 
 // Internationalization strings
 const I18N = {
@@ -274,7 +274,6 @@ export default function CheckoutPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const pageId = params.id;
-  const checkoutRef = useCheckoutEmbedControls();
 
   // Page state
   const [pageConfig, setPageConfig] = useState(null);
@@ -282,7 +281,6 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [checkoutReady, setCheckoutReady] = useState(false);
 
   // Check for return status from Whop redirect
   useEffect(() => {
@@ -308,8 +306,6 @@ export default function CheckoutPage() {
   const [phoneDropdownOpen, setPhoneDropdownOpen] = useState(false);
   const phoneRef = useRef(null);
   const [marketingOptIn, setMarketingOptIn] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState({});
 
   // Countdown timer (10 minutes)
   const [timeLeft, setTimeLeft] = useState(10 * 60);
@@ -392,38 +388,7 @@ export default function CheckoutPage() {
   // Handle payment complete
   const handleComplete = (planId, receiptId) => {
     console.log("[Whop] Payment complete:", { planId, receiptId });
-    setSubmitting(false);
     setPaymentSuccess(true);
-  };
-
-  // Validate form fields
-  const validateForm = () => {
-    const errors = {};
-    if (!email.trim()) errors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(email)) errors.email = "Enter a valid email";
-    if (!firstName.trim()) errors.firstName = "First name is required";
-    if (!lastName.trim()) errors.lastName = "Last name is required";
-    if (!address.trim()) errors.address = "Address is required";
-    if (!city.trim()) errors.city = "City is required";
-    if (!postalCode.trim()) errors.postalCode = "Postal code is required";
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Clear field error on change
-  const clearError = (field) => {
-    if (fieldErrors[field]) {
-      setFieldErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
-    }
-  };
-
-  // Handle Complete Order button - just validate our form and trigger the embed
-  const handleSubmitOrder = () => {
-    if (!checkoutRef.current || submitting) return;
-    if (!validateForm()) return;
-    // Fire-and-forget: submit() sends postMessage to iframe, iframe handles the rest
-    // onStateChange("disabled") = processing, onStateChange("ready") = done/error, onComplete = success
-    checkoutRef.current.submit();
   };
 
   // Get return URL for redirects (needed for 3DS and external payment providers)
@@ -527,10 +492,10 @@ export default function CheckoutPage() {
                   label={t.email_placeholder}
                   type="email"
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
+                  onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                   required
-                  error={fieldErrors.email}
+
                 />
               </div>
 
@@ -622,18 +587,18 @@ export default function CheckoutPage() {
                   <FloatingInput
                     label={t.first_name_placeholder}
                     value={firstName}
-                    onChange={(e) => { setFirstName(e.target.value); clearError("firstName"); }}
+                    onChange={(e) => setFirstName(e.target.value)}
                     autoComplete="given-name"
-                    error={fieldErrors.firstName}
+
                   />
                 </div>
                 <div className="form-group">
                   <FloatingInput
                     label={t.last_name_placeholder}
                     value={lastName}
-                    onChange={(e) => { setLastName(e.target.value); clearError("lastName"); }}
+                    onChange={(e) => setLastName(e.target.value)}
                     autoComplete="family-name"
-                    error={fieldErrors.lastName}
+
                   />
                 </div>
               </div>
@@ -642,9 +607,9 @@ export default function CheckoutPage() {
                 <FloatingInput
                   label={t.address_placeholder}
                   value={address}
-                  onChange={(e) => { setAddress(e.target.value); clearError("address"); }}
+                  onChange={(e) => setAddress(e.target.value)}
                   autoComplete="street-address"
-                  error={fieldErrors.address}
+
                 />
               </div>
 
@@ -662,9 +627,9 @@ export default function CheckoutPage() {
                   <FloatingInput
                     label={t.city_placeholder}
                     value={city}
-                    onChange={(e) => { setCity(e.target.value); clearError("city"); }}
+                    onChange={(e) => setCity(e.target.value)}
                     autoComplete="address-level2"
-                    error={fieldErrors.city}
+
                   />
                 </div>
                 <div className="form-group">
@@ -679,9 +644,9 @@ export default function CheckoutPage() {
                   <FloatingInput
                     label={t.postal_placeholder}
                     value={postalCode}
-                    onChange={(e) => { setPostalCode(e.target.value); clearError("postalCode"); }}
+                    onChange={(e) => setPostalCode(e.target.value)}
                     autoComplete="postal-code"
-                    error={fieldErrors.postalCode}
+
                   />
                 </div>
               </div>
@@ -713,26 +678,13 @@ export default function CheckoutPage() {
 
               <div className="whop-embed-container">
                 <WhopCheckoutEmbed
-                  ref={checkoutRef}
                   planId={pageConfig.whopPlanId}
                   returnUrl={getReturnUrl()}
                   hideEmail
                   hideAddressForm
                   hidePrice
-                  hideSubmitButton
                   theme="light"
                   onComplete={handleComplete}
-                  onStateChange={(state) => {
-                    console.log("[Whop] Checkout state:", state);
-                    if (state === "ready") {
-                      setCheckoutReady(true);
-                      setSubmitting(false);
-                    } else if (state === "disabled") {
-                      setSubmitting(true);
-                    } else if (state === "loading") {
-                      setCheckoutReady(false);
-                    }
-                  }}
                   prefill={{
                     email: email || undefined,
                   }}
@@ -752,22 +704,6 @@ export default function CheckoutPage() {
                 />
               </div>
             </section>
-
-            {/* Complete Order Button */}
-            <button
-              type="button"
-              className="btn btn-complete-order"
-              disabled={submitting || !checkoutReady}
-              onClick={handleSubmitOrder}
-            >
-              <LockIcon />
-              {submitting ? t.processing : "Complete order"}
-            </button>
-
-            <p className="secure-notice">
-              <LockIcon />
-              {t.secure_payment}
-            </p>
 
             <div className="checkout-bottom-section">
               <img className="payment-badges" src="https://lassodata.s3.eu-north-1.amazonaws.com/users/6994a4bf984dfe408eb12079/payment-pages/6994a9e9984dfe408eb12397_payment_methods_6984d2e19d9687f9923ba944-payment-methods-upcart-trust-badge-1768853478727-cbdadadd-3fa09df1.png" alt="Payment methods" />
