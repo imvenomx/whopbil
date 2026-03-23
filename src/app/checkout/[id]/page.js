@@ -245,7 +245,7 @@ const REVIEWS = [
 ];
 
 // Floating label input component
-const FloatingInput = ({ label, value, onChange, type = "text", autoComplete, required, error }) => (
+const FloatingInput = ({ label, value, onChange, type = "text", required, error }) => (
   <>
     <div className="float-label">
       <input
@@ -254,7 +254,7 @@ const FloatingInput = ({ label, value, onChange, type = "text", autoComplete, re
         placeholder=" "
         value={value}
         onChange={onChange}
-        autoComplete={autoComplete}
+        autoComplete="off"
         required={required}
       />
       <label className="float-label-text">{label}</label>
@@ -308,6 +308,24 @@ export default function CheckoutPage() {
   const [phoneDropdownOpen, setPhoneDropdownOpen] = useState(false);
   const phoneRef = useRef(null);
   const [marketingOptIn, setMarketingOptIn] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validateForm = () => {
+    const errors = {};
+    if (!email.trim()) errors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(email)) errors.email = "Enter a valid email";
+    if (!firstName.trim()) errors.firstName = "First name is required";
+    if (!lastName.trim()) errors.lastName = "Last name is required";
+    if (!address.trim()) errors.address = "Address is required";
+    if (!city.trim()) errors.city = "City is required";
+    if (!postalCode.trim()) errors.postalCode = "Postal code is required";
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const clearError = (field) => {
+    if (fieldErrors[field]) setFieldErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
+  };
 
   // Countdown timer (10 minutes)
   const [timeLeft, setTimeLeft] = useState(10 * 60);
@@ -396,6 +414,7 @@ export default function CheckoutPage() {
   // Handle Complete Order - programmatic submit per Whop docs
   const handleSubmitOrder = async () => {
     if (!checkoutRef.current || checkoutState !== "ready") return;
+    if (!validateForm()) return;
     try {
       if (email) await checkoutRef.current.setEmail(email);
     } catch (e) {
@@ -518,9 +537,9 @@ export default function CheckoutPage() {
                   label={t.email_placeholder}
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
+                  onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
                   required
+                  error={fieldErrors.email}
 
                 />
               </div>
@@ -560,7 +579,7 @@ export default function CheckoutPage() {
                       placeholder=" "
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      autoComplete="tel-national"
+                      autoComplete="off"
                     />
                     <label className="float-label-text">Phone number</label>
                   </div>
@@ -591,7 +610,7 @@ export default function CheckoutPage() {
                     className="form-select"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    autoComplete="country"
+                    autoComplete="off"
                   >
                     <option value="IT">Italy</option>
                     <option value="FR">France</option>
@@ -613,18 +632,16 @@ export default function CheckoutPage() {
                   <FloatingInput
                     label={t.first_name_placeholder}
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    autoComplete="given-name"
-
+                    onChange={(e) => { setFirstName(e.target.value); clearError("firstName"); }}
+                    error={fieldErrors.firstName}
                   />
                 </div>
                 <div className="form-group">
                   <FloatingInput
                     label={t.last_name_placeholder}
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    autoComplete="family-name"
-
+                    onChange={(e) => { setLastName(e.target.value); clearError("lastName"); }}
+                    error={fieldErrors.lastName}
                   />
                 </div>
               </div>
@@ -633,9 +650,8 @@ export default function CheckoutPage() {
                 <FloatingInput
                   label={t.address_placeholder}
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  autoComplete="street-address"
-
+                  onChange={(e) => { setAddress(e.target.value); clearError("address"); }}
+                  error={fieldErrors.address}
                 />
               </div>
 
@@ -644,7 +660,6 @@ export default function CheckoutPage() {
                   label={t.apt_placeholder}
                   value={apartment}
                   onChange={(e) => setApartment(e.target.value)}
-                  autoComplete="address-line2"
                 />
               </div>
 
@@ -653,9 +668,8 @@ export default function CheckoutPage() {
                   <FloatingInput
                     label={t.city_placeholder}
                     value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    autoComplete="address-level2"
-
+                    onChange={(e) => { setCity(e.target.value); clearError("city"); }}
+                    error={fieldErrors.city}
                   />
                 </div>
                 <div className="form-group">
@@ -663,15 +677,14 @@ export default function CheckoutPage() {
                     label={t.province_placeholder}
                     value={province}
                     onChange={(e) => setProvince(e.target.value)}
-                    autoComplete="address-level1"
                   />
                 </div>
                 <div className="form-group">
                   <FloatingInput
                     label={t.postal_placeholder}
                     value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    autoComplete="postal-code"
+                    onChange={(e) => { setPostalCode(e.target.value); clearError("postalCode"); }}
+                    error={fieldErrors.postalCode}
 
                   />
                 </div>
