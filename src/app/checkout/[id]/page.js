@@ -395,15 +395,8 @@ export default function CheckoutPage() {
 
   // Handle Complete Order - programmatic submit per Whop docs
   const handleSubmitOrder = () => {
-    console.log("[Whop] Complete order clicked, state:", checkoutState, "ref:", !!checkoutRef.current);
-    if (!checkoutRef.current) return;
-    if (checkoutState !== "ready") return;
-    console.log("[Whop] Calling submit()...");
-    const result = checkoutRef.current.submit();
-    console.log("[Whop] submit() returned:", result);
-    if (result && result.then) {
-      result.then(() => console.log("[Whop] submit() resolved")).catch((e) => console.error("[Whop] submit() rejected:", e));
-    }
+    if (!checkoutRef.current || checkoutState !== "ready") return;
+    checkoutRef.current.submit();
   };
 
   // Get return URL for redirects (needed for 3DS and external payment providers)
@@ -696,8 +689,7 @@ export default function CheckoutPage() {
                   ref={checkoutRef}
                   planId={pageConfig.whopPlanId}
                   returnUrl={getReturnUrl()}
-                  hideEmail
-                  hideAddressForm
+                  disableEmail
                   hidePrice
                   hideSubmitButton
                   theme="light"
