@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { WhopCheckoutEmbed } from "@whop/checkout/react";
+import { WhopCheckoutEmbed, useCheckoutEmbedControls } from "@whop/checkout/react";
 
 // Internationalization strings
 const I18N = {
@@ -274,6 +274,7 @@ export default function CheckoutPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const pageId = params.id;
+  const checkoutRef = useCheckoutEmbedControls();
 
   // Page state
   const [pageConfig, setPageConfig] = useState(null);
@@ -281,6 +282,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [checkoutState, setCheckoutState] = useState("loading"); // "loading" | "ready" | "disabled"
 
   // Check for return status from Whop redirect
   useEffect(() => {
@@ -389,6 +391,13 @@ export default function CheckoutPage() {
   const handleComplete = (planId, receiptId) => {
     console.log("[Whop] Payment complete:", { planId, receiptId });
     setPaymentSuccess(true);
+  };
+
+  // Handle Complete Order - programmatic submit per Whop docs
+  const handleSubmitOrder = () => {
+    if (!checkoutRef.current) return;
+    if (checkoutState !== "ready") return;
+    checkoutRef.current.submit();
   };
 
   // Get return URL for redirects (needed for 3DS and external payment providers)
@@ -678,13 +687,19 @@ export default function CheckoutPage() {
 
               <div className="whop-embed-container">
                 <WhopCheckoutEmbed
+                  ref={checkoutRef}
                   planId={pageConfig.whopPlanId}
                   returnUrl={getReturnUrl()}
                   hideEmail
                   hideAddressForm
                   hidePrice
+                  hideSubmitButton
                   theme="light"
                   onComplete={handleComplete}
+                  onStateChange={(state) => {
+                    console.log("[Whop] state:", state);
+                    setCheckoutState(state);
+                  }}
                   prefill={{
                     email: email || undefined,
                   }}
@@ -704,6 +719,22 @@ export default function CheckoutPage() {
                 />
               </div>
             </section>
+
+            {/* Complete Order Button */}
+            <button
+              type="button"
+              className="btn btn-complete-order"
+              disabled={checkoutState !== "ready"}
+              onClick={handleSubmitOrder}
+            >
+              <LockIcon />
+              {checkoutState === "disabled" ? t.processing : "Complete order"}
+            </button>
+
+            <p className="secure-notice">
+              <LockIcon />
+              {t.secure_payment}
+            </p>
 
             <div className="checkout-bottom-section">
               <img className="payment-badges" src="https://lassodata.s3.eu-north-1.amazonaws.com/users/6994a4bf984dfe408eb12079/payment-pages/6994a9e9984dfe408eb12397_payment_methods_6984d2e19d9687f9923ba944-payment-methods-upcart-trust-badge-1768853478727-cbdadadd-3fa09df1.png" alt="Payment methods" />
