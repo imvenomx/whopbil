@@ -54,6 +54,9 @@ export async function POST(request) {
       slug: body.slug,
       whopPlanId: body.whopPlanId || "",
       whopEnvironment: body.whopEnvironment || "production",
+      price: body.price || "",
+      productName: body.productName || "",
+      productImage: body.productImage || "",
     });
 
     return NextResponse.json({ ok: true, page });
@@ -89,6 +92,9 @@ export async function PUT(request) {
       slug: body.slug,
       whopPlanId: body.whopPlanId,
       whopEnvironment: body.whopEnvironment,
+      price: body.price || "",
+      productName: body.productName || "",
+      productImage: body.productImage || "",
     });
 
     return NextResponse.json({ ok: true, page });
