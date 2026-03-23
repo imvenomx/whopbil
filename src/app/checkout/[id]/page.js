@@ -282,8 +282,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [checkoutState, setCheckoutState] = useState("loading");
-  const [submitting, setSubmitting] = useState(false);
+  const [checkoutState, setCheckoutState] = useState("loading"); // "loading" | "ready" | "disabled"
 
   // Check for return status from Whop redirect
   useEffect(() => {
@@ -414,12 +413,13 @@ export default function CheckoutPage() {
 
   // Handle Complete Order - programmatic submit per Whop docs
   const handleSubmitOrder = async () => {
-    if (!checkoutRef.current || checkoutState !== "ready" || submitting) return;
+    if (!checkoutRef.current || checkoutState !== "ready") return;
     if (!validateForm()) return;
-    setSubmitting(true);
     try {
       if (email) await checkoutRef.current.setEmail(email);
-    } catch {}
+    } catch (e) {
+      console.warn("[Whop] setEmail:", e.message);
+    }
     try {
       const fn = firstName.trim() || "John";
       const ln = lastName.trim() || "Doe";
@@ -432,7 +432,9 @@ export default function CheckoutPage() {
         country: country || "GB",
         ...(apartment ? { line2: apartment } : {}),
       });
-    } catch {}
+    } catch (e) {
+      console.warn("[Whop] setAddress:", e.message);
+    }
     checkoutRef.current.submit();
   };
 
@@ -728,8 +730,8 @@ export default function CheckoutPage() {
                   onComplete={handleComplete}
                   onAddressValidationError={() => {}}
                   onStateChange={(state) => {
+                    console.log("[Whop] state:", state);
                     setCheckoutState(state);
-                    if (state === "ready") setSubmitting(false);
                   }}
                   prefill={{
                     email: email || undefined,
@@ -755,11 +757,11 @@ export default function CheckoutPage() {
             <button
               type="button"
               className="btn btn-complete-order"
-              disabled={submitting || checkoutState !== "ready"}
+              disabled={checkoutState !== "ready"}
               onClick={handleSubmitOrder}
             >
               <LockIcon />
-              {submitting ? t.processing : "Complete order"}
+              {checkoutState === "disabled" ? t.processing : "Complete order"}
             </button>
 
             <p className="secure-notice">
