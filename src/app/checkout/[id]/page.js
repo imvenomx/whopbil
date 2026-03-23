@@ -413,30 +413,24 @@ export default function CheckoutPage() {
   };
 
   // Handle Complete Order - programmatic submit per Whop docs
-  const handleSubmitOrder = async () => {
+  // setEmail/setAddress are fire-and-forget (no await) to avoid RPC timeout blocking submit
+  const handleSubmitOrder = () => {
     if (!checkoutRef.current || checkoutState !== "ready") return;
     if (!validateForm()) return;
-    try {
-      if (email) await checkoutRef.current.setEmail(email);
-    } catch (e) {
-      console.warn("[Whop] setEmail:", e.message);
-    }
-    try {
-      const fn = firstName.trim() || "John";
-      const ln = lastName.trim() || "Doe";
-      await checkoutRef.current.setAddress({
-        name: `${fn} ${ln}`,
-        line1: address || "N/A",
-        city: city || "N/A",
-        state: province || "",
-        postalCode: postalCode || "00000",
-        country: country || "GB",
-        ...(apartment ? { line2: apartment } : {}),
-      });
-    } catch (e) {
-      console.warn("[Whop] setAddress:", e.message);
-    }
-    checkoutRef.current.submit();
+    const fn = firstName.trim() || "John";
+    const ln = lastName.trim() || "Doe";
+    if (email) checkoutRef.current.setEmail(email).catch(() => {});
+    checkoutRef.current.setAddress({
+      name: `${fn} ${ln}`,
+      line1: address || "N/A",
+      city: city || "N/A",
+      state: province || "",
+      postalCode: postalCode || "00000",
+      country: country || "GB",
+      ...(apartment ? { line2: apartment } : {}),
+    }).catch(() => {});
+    // Small delay to let setEmail/setAddress messages reach the iframe before submit
+    setTimeout(() => checkoutRef.current.submit(), 100);
   };
 
   // Get return URL for redirects (needed for 3DS and external payment providers)
@@ -729,7 +723,9 @@ export default function CheckoutPage() {
                   hideSubmitButton
                   theme="light"
                   onComplete={handleComplete}
-                  onAddressValidationError={() => {}}
+                  onAddressValidationError={(err) => {
+                    console.error("[Whop] Address error:", err);
+                  }}
                   onStateChange={(state) => {
                     console.log("[Whop] state:", state);
                     setCheckoutState(state);
