@@ -708,7 +708,6 @@ export default function CheckoutPage() {
                   planId={pageConfig.whopPlanId}
                   returnUrl={getReturnUrl()}
                   hideEmail
-                  hideAddressForm
                   hidePrice
                   hideSubmitButton
                   theme="light"
