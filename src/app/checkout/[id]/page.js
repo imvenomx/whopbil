@@ -708,10 +708,14 @@ export default function CheckoutPage() {
                   planId={pageConfig.whopPlanId}
                   returnUrl={getReturnUrl()}
                   hideEmail
+                  hideAddressForm
                   hidePrice
                   hideSubmitButton
                   theme="light"
                   onComplete={handleComplete}
+                  onAddressValidationError={(err) => {
+                    console.error("[Whop] Address error:", err);
+                  }}
                   onStateChange={(state) => {
                     console.log("[Whop] state:", state);
                     setCheckoutState(state);
