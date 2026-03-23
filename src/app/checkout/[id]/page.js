@@ -52,6 +52,17 @@ const I18N = {
     trust_guarantee_title: "30 Days Money Back Guarantee",
     trust_guarantee_desc: "Change of mind? Exchange or return easily within the first 30 days",
     customer_reviews: "Customer Reviews",
+    product_qty: "Quantity: 1",
+    terms: "Terms & conditions",
+    privacy: "Privacy policy",
+    return_policy: "Return/Shipping policy",
+    review_1_title: "Absolutely love it!",
+    review_1_body: "The quality exceeded my expectations. Delivery was fast and packaging was great. Highly recommend to anyone considering this.",
+    review_2_title: "Best purchase this year",
+    review_2_body: "I've been looking for something like this for months. It works perfectly and the customer support was incredibly helpful.",
+    review_3_title: "Worth every penny",
+    review_3_body: "Fast shipping, great product, and easy to use. Already recommended it to all my friends. Will definitely buy again!",
+    review_time: "2 days ago",
   },
   it: {
     checkout: "Cassa",
@@ -99,6 +110,17 @@ const I18N = {
     trust_guarantee_title: "Garanzia rimborso 30 giorni",
     trust_guarantee_desc: "Cambiato idea? Scambia o restituisci facilmente entro 30 giorni",
     customer_reviews: "Recensioni clienti",
+    product_qty: "Quantità: 1",
+    terms: "Termini e condizioni",
+    privacy: "Informativa sulla privacy",
+    return_policy: "Politica di reso/spedizione",
+    review_1_title: "Lo adoro!",
+    review_1_body: "La qualità ha superato le mie aspettative. Consegna veloce e imballaggio perfetto. Lo consiglio vivamente.",
+    review_2_title: "Miglior acquisto dell'anno",
+    review_2_body: "Lo cercavo da mesi. Funziona perfettamente e il servizio clienti è stato incredibilmente disponibile.",
+    review_3_title: "Vale ogni centesimo",
+    review_3_body: "Spedizione veloce, ottimo prodotto e facile da usare. L'ho già consigliato a tutti i miei amici!",
+    review_time: "2 giorni fa",
   },
   fr: {
     checkout: "Paiement",
@@ -146,6 +168,17 @@ const I18N = {
     trust_guarantee_title: "Garantie remboursement 30 jours",
     trust_guarantee_desc: "Changement d'avis ? Échangez ou retournez facilement sous 30 jours",
     customer_reviews: "Avis clients",
+    product_qty: "Quantité : 1",
+    terms: "Conditions générales",
+    privacy: "Politique de confidentialité",
+    return_policy: "Politique de retour/livraison",
+    review_1_title: "Je l'adore !",
+    review_1_body: "La qualité a dépassé mes attentes. Livraison rapide et emballage soigné. Je recommande vivement.",
+    review_2_title: "Meilleur achat de l'année",
+    review_2_body: "Je cherchais quelque chose comme ça depuis des mois. Ça fonctionne parfaitement et le support client était incroyable.",
+    review_3_title: "Chaque centime en vaut la peine",
+    review_3_body: "Livraison rapide, excellent produit et facile à utiliser. Je l'ai déjà recommandé à tous mes amis !",
+    review_time: "il y a 2 jours",
   },
   de: {
     checkout: "Kasse",
@@ -193,6 +226,17 @@ const I18N = {
     trust_guarantee_title: "30 Tage Geld-zurück-Garantie",
     trust_guarantee_desc: "Meinungsänderung? Einfach innerhalb von 30 Tagen umtauschen oder zurückgeben",
     customer_reviews: "Kundenbewertungen",
+    product_qty: "Menge: 1",
+    terms: "AGB",
+    privacy: "Datenschutzrichtlinie",
+    return_policy: "Rückgabe-/Versandrichtlinie",
+    review_1_title: "Absolut begeistert!",
+    review_1_body: "Die Qualität hat meine Erwartungen übertroffen. Schnelle Lieferung und tolle Verpackung. Sehr empfehlenswert.",
+    review_2_title: "Bester Kauf dieses Jahres",
+    review_2_body: "Ich habe monatelang danach gesucht. Es funktioniert perfekt und der Kundenservice war unglaublich hilfsbereit.",
+    review_3_title: "Jeden Cent wert",
+    review_3_body: "Schneller Versand, tolles Produkt und einfach zu bedienen. Habe es bereits allen Freunden empfohlen!",
+    review_time: "vor 2 Tagen",
   },
 };
 
@@ -271,30 +315,19 @@ const StarIcon = () => (
   </svg>
 );
 
-// Review data
-const REVIEWS = [
-  {
-    title: "Absolutely love it!",
-    body: "The quality exceeded my expectations. Delivery was fast and packaging was great. Highly recommend to anyone considering this.",
-    name: "Sarah M.",
-    avatar: "https://i.pravatar.cc/80?img=1",
-    time: "2 days ago",
-  },
-  {
-    title: "Best purchase this year",
-    body: "I've been looking for something like this for months. It works perfectly and the customer support was incredibly helpful.",
-    name: "James T.",
-    avatar: "https://i.pravatar.cc/80?img=3",
-    time: "2 days ago",
-  },
-  {
-    title: "Worth every penny",
-    body: "Fast shipping, great product, and easy to use. Already recommended it to all my friends. Will definitely buy again!",
-    name: "Emily R.",
-    avatar: "https://i.pravatar.cc/80?img=5",
-    time: "2 days ago",
-  },
+// Review data (names/avatars are language-independent)
+const REVIEW_AUTHORS = [
+  { name: "Sarah M.", avatar: "https://i.pravatar.cc/80?img=1" },
+  { name: "James T.", avatar: "https://i.pravatar.cc/80?img=3" },
+  { name: "Emily R.", avatar: "https://i.pravatar.cc/80?img=5" },
 ];
+function getReviews(t) {
+  return [
+    { title: t.review_1_title, body: t.review_1_body, ...REVIEW_AUTHORS[0], time: t.review_time },
+    { title: t.review_2_title, body: t.review_2_body, ...REVIEW_AUTHORS[1], time: t.review_time },
+    { title: t.review_3_title, body: t.review_3_body, ...REVIEW_AUTHORS[2], time: t.review_time },
+  ];
+}
 
 // Floating label input component
 const FloatingInput = ({ label, value, onChange, type = "text", required, error }) => (
@@ -644,7 +677,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="product-details">
                   <p className="product-name">{pageConfig?.productName || "Product"}</p>
-                  <p className="product-variant">Monthly subscription</p>
+                  <p className="product-variant">{t.product_qty}</p>
                 </div>
                 <span className="product-price">{displayPrice}</span>
               </div>
@@ -984,9 +1017,9 @@ export default function CheckoutPage() {
             <div className="checkout-bottom-section">
               <img className="payment-badges" src="https://lassodata.s3.eu-north-1.amazonaws.com/users/6994a4bf984dfe408eb12079/payment-pages/6994a9e9984dfe408eb12397_payment_methods_6984d2e19d9687f9923ba944-payment-methods-upcart-trust-badge-1768853478727-cbdadadd-3fa09df1.png" alt="Payment methods" />
               <div className="footer-links-grid">
-                <a href="#" className="footer-link">Terms & conditions</a>
-                <a href="#" className="footer-link">Privacy policy</a>
-                <a href="#" className="footer-link">Return/Shipping policy</a>
+                <a href="#" className="footer-link">{t.terms}</a>
+                <a href="#" className="footer-link">{t.privacy}</a>
+                <a href="#" className="footer-link">{t.return_policy}</a>
               </div>
             </div>
           </div>
@@ -1026,7 +1059,7 @@ export default function CheckoutPage() {
               </div>
               <div className="product-details">
                 <p className="product-name">{pageConfig?.productName || "Product"}</p>
-                <p className="product-variant">Monthly subscription</p>
+                <p className="product-variant">{t.product_qty}</p>
               </div>
               <span className="product-price">{displayPrice}</span>
             </div>
@@ -1110,7 +1143,7 @@ export default function CheckoutPage() {
               </div>
               <div className="customer-reviews">
                 <h3 className="reviews-title">{t.customer_reviews}</h3>
-                {REVIEWS.map((review, i) => (
+                {getReviews(t).map((review, i) => (
                   <div className="review-card" key={i}>
                     <div className="review-stars">
                       {[...Array(5)].map((_, j) => <StarIcon key={j} />)}
@@ -1153,7 +1186,7 @@ export default function CheckoutPage() {
           </div>
           <div className="customer-reviews">
             <h3 className="reviews-title">{t.customer_reviews}</h3>
-            {REVIEWS.map((review, i) => (
+            {getReviews(t).map((review, i) => (
               <div className="review-card" key={i}>
                 <div className="review-stars">
                   {[...Array(5)].map((_, j) => <StarIcon key={j} />)}
