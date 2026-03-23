@@ -389,31 +389,6 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, [pageId]);
 
-  // Sync email/address to Whop embed before submit (not on every keystroke)
-  const syncFormToEmbed = async () => {
-    if (!checkoutRef.current) return;
-    try {
-      if (email) await checkoutRef.current.setEmail(email);
-    } catch (e) {
-      console.warn("[Whop] setEmail failed:", e.message);
-    }
-    try {
-      if (address) {
-        await checkoutRef.current.setAddress({
-          name: `${firstName} ${lastName}`.trim() || undefined,
-          line1: address,
-          line2: apartment || undefined,
-          city: city,
-          state: province,
-          postalCode: postalCode,
-          country: country,
-        });
-      }
-    } catch (e) {
-      console.warn("[Whop] setAddress failed:", e.message);
-    }
-  };
-
   // Handle payment complete
   const handleComplete = (planId, receiptId) => {
     console.log("[Whop] Payment complete:", { planId, receiptId });
@@ -442,17 +417,13 @@ export default function CheckoutPage() {
     }
   };
 
-  // Handle Complete Order button
-  const handleSubmitOrder = async () => {
+  // Handle Complete Order button - just validate our form and trigger the embed
+  const handleSubmitOrder = () => {
     if (!checkoutRef.current || submitting) return;
     if (!validateForm()) return;
-    // Sync form data to embed, then submit
-    await syncFormToEmbed();
-    try {
-      await checkoutRef.current.submit();
-    } catch (e) {
-      console.warn("[Whop] submit():", e.message);
-    }
+    // Fire-and-forget: submit() sends postMessage to iframe, iframe handles the rest
+    // onStateChange("disabled") = processing, onStateChange("ready") = done/error, onComplete = success
+    checkoutRef.current.submit();
   };
 
   // Get return URL for redirects (needed for 3DS and external payment providers)

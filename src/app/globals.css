@@ -200,10 +200,6 @@ body {
    ============================================ */
 
 .checkout-section {
-  margin-bottom: var(--spacing-section);
-}
-
-.checkout-section:last-child {
   margin-bottom: 0;
 }
 
