@@ -389,26 +389,30 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, [pageId]);
 
-  // Update Whop checkout with email/address when they change
-  useEffect(() => {
-    if (checkoutRef.current && email) {
-      checkoutRef.current.setEmail(email);
+  // Sync email/address to Whop embed before submit (not on every keystroke)
+  const syncFormToEmbed = async () => {
+    if (!checkoutRef.current) return;
+    try {
+      if (email) await checkoutRef.current.setEmail(email);
+    } catch (e) {
+      console.warn("[Whop] setEmail failed:", e.message);
     }
-  }, [email]);
-
-  useEffect(() => {
-    if (checkoutRef.current && address) {
-      checkoutRef.current.setAddress({
-        name: `${firstName} ${lastName}`.trim() || undefined,
-        line1: address,
-        line2: apartment || undefined,
-        city: city,
-        state: province,
-        postalCode: postalCode,
-        country: country,
-      });
+    try {
+      if (address) {
+        await checkoutRef.current.setAddress({
+          name: `${firstName} ${lastName}`.trim() || undefined,
+          line1: address,
+          line2: apartment || undefined,
+          city: city,
+          state: province,
+          postalCode: postalCode,
+          country: country,
+        });
+      }
+    } catch (e) {
+      console.warn("[Whop] setAddress failed:", e.message);
     }
-  }, [firstName, lastName, address, apartment, city, province, postalCode, country]);
+  };
 
   // Handle payment complete
   const handleComplete = (planId, receiptId) => {
@@ -440,27 +444,14 @@ export default function CheckoutPage() {
 
   // Handle Complete Order button
   const handleSubmitOrder = async () => {
-    console.log("[DEBUG] Button clicked");
-    console.log("[DEBUG] ref.current:", checkoutRef.current);
-    console.log("[DEBUG] checkoutReady:", checkoutReady);
-    console.log("[DEBUG] submitting:", submitting);
-
-    if (!validateForm()) {
-      console.log("[DEBUG] Form validation failed");
-      return;
-    }
-
-    if (!checkoutRef.current) {
-      console.log("[DEBUG] ref.current is NULL - cannot submit");
-      return;
-    }
-
+    if (!checkoutRef.current || submitting) return;
+    if (!validateForm()) return;
+    // Sync form data to embed, then submit
+    await syncFormToEmbed();
     try {
-      console.log("[DEBUG] Calling submit()...");
       await checkoutRef.current.submit();
-      console.log("[DEBUG] submit() resolved");
     } catch (e) {
-      console.error("[DEBUG] submit() error:", e.name, e.message);
+      console.warn("[Whop] submit():", e.message);
     }
   };
 
@@ -795,7 +786,7 @@ export default function CheckoutPage() {
             <button
               type="button"
               className="btn btn-complete-order"
-              disabled={false}
+              disabled={submitting || !checkoutReady}
               onClick={handleSubmitOrder}
             >
               <LockIcon />
