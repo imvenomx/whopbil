@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { WhopCheckoutEmbed } from "@whop/checkout/react";
+import { WhopCheckoutEmbed, useCheckoutEmbedControls } from "@whop/checkout/react";
 
 // Internationalization strings
 const I18N = {
@@ -164,30 +164,11 @@ async function detectLangByIP() {
   }
 }
 
-// Card icons as inline SVGs for reliability
-const CardIcons = {
-  visa: (
-    <svg viewBox="0 0 38 24" width="38" height="24" aria-label="Visa">
-      <rect width="38" height="24" rx="3" fill="#1434CB"/>
-      <path d="M15.56 8.14l-2.37 7.72h-1.9l-1.17-6.16c-.07-.28-.13-.38-.35-.5-.35-.2-.93-.38-1.44-.5l.03-.56h3.06c.39 0 .74.26.83.71l.76 4.03 1.87-4.74h1.88zm7.37 5.2c.01-2.04-2.82-2.15-2.8-3.06.01-.28.27-.57.85-.65.29-.04 1.08-.07 1.98.35l.35-1.64a5.4 5.4 0 00-1.88-.35c-1.98 0-3.37 1.05-3.38 2.56-.01 1.11 1 1.73 1.76 2.1.78.38 1.04.63 1.04 .97-.01.52-.62.75-1.2.76-.99.02-1.57-.27-2.03-.48l-.36 1.68c.46.21 1.32.4 2.2.41 2.1 0 3.48-1.04 3.49-2.65h-.02zm5.22 2.52h1.66l-1.45-7.72h-1.53c-.35 0-.64.2-.77.51l-2.72 7.21h1.9l.38-1.04h2.32l.21 1.04zm-2.02-2.48l.95-2.63.55 2.63h-1.5zm-7.6-5.24l-1.5 7.72h-1.8l1.5-7.72h1.8z" fill="#fff"/>
-    </svg>
-  ),
-  mastercard: (
-    <svg viewBox="0 0 38 24" width="38" height="24" aria-label="Mastercard">
-      <rect width="38" height="24" rx="3" fill="#000"/>
-      <circle cx="15" cy="12" r="7" fill="#EB001B"/>
-      <circle cx="23" cy="12" r="7" fill="#F79E1B"/>
-      <path d="M19 6.5a7 7 0 000 11 7 7 0 000-11z" fill="#FF5F00"/>
-    </svg>
-  ),
-  amex: (
-    <svg viewBox="0 0 38 24" width="38" height="24" aria-label="American Express">
-      <rect width="38" height="24" rx="3" fill="#006FCF"/>
-      <path d="M10 12h18M10 9h18M10 15h18" stroke="#fff" strokeWidth="1.5"/>
-      <text x="19" y="14" textAnchor="middle" fill="#fff" fontSize="6" fontWeight="bold">AMEX</text>
-    </svg>
-  ),
-};
+// Phone country codes
+const PHONE_COUNTRIES = [
+  { code: "GB", dial: "+44", flag: "\u{1F1EC}\u{1F1E7}" },
+  { code: "DE", dial: "+49", flag: "\u{1F1E9}\u{1F1EA}" },
+];
 
 // Lock icon for card number field
 const LockIcon = () => (
@@ -213,6 +194,75 @@ const CartIcon = () => (
   </svg>
 );
 
+// Truck icon for delivery trust badge
+const TruckIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1773b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="3" width="15" height="13"/>
+    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+    <circle cx="5.5" cy="18.5" r="2.5"/>
+    <circle cx="18.5" cy="18.5" r="2.5"/>
+  </svg>
+);
+
+// Shield icon for guarantee trust badge
+const ShieldIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1773b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    <polyline points="9 12 11 14 15 10" stroke="#1773b0" strokeWidth="2"/>
+  </svg>
+);
+
+// Star icon for reviews
+const StarIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#facc15" stroke="#facc15" strokeWidth="1">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+);
+
+// Review data
+const REVIEWS = [
+  {
+    title: "Absolutely love it!",
+    body: "The quality exceeded my expectations. Delivery was fast and packaging was great. Highly recommend to anyone considering this.",
+    name: "Sarah M.",
+    avatar: "https://i.pravatar.cc/80?img=1",
+    time: "2 days ago",
+  },
+  {
+    title: "Best purchase this year",
+    body: "I've been looking for something like this for months. It works perfectly and the customer support was incredibly helpful.",
+    name: "James T.",
+    avatar: "https://i.pravatar.cc/80?img=3",
+    time: "2 days ago",
+  },
+  {
+    title: "Worth every penny",
+    body: "Fast shipping, great product, and easy to use. Already recommended it to all my friends. Will definitely buy again!",
+    name: "Emily R.",
+    avatar: "https://i.pravatar.cc/80?img=5",
+    time: "2 days ago",
+  },
+];
+
+// Floating label input component
+const FloatingInput = ({ label, value, onChange, type = "text", autoComplete, required, error }) => (
+  <>
+    <div className="float-label">
+      <input
+        type={type}
+        className={`form-input${error ? " input-error" : ""}`}
+        placeholder=" "
+        value={value}
+        onChange={onChange}
+        autoComplete={autoComplete}
+        required={required}
+      />
+      <label className="float-label-text">{label}</label>
+    </div>
+    {error && <span className="field-error">{error}</span>}
+  </>
+);
+
 // Chevron icon
 const ChevronIcon = ({ down }) => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: down ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
@@ -224,7 +274,7 @@ export default function CheckoutPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const pageId = params.id;
-  const checkoutRef = useRef(null);
+  const checkoutRef = useCheckoutEmbedControls();
 
   // Page state
   const [pageConfig, setPageConfig] = useState(null);
@@ -232,8 +282,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
-  const [sessionLoading, setSessionLoading] = useState(false);
+  const [checkoutReady, setCheckoutReady] = useState(false);
 
   // Check for return status from Whop redirect
   useEffect(() => {
@@ -254,7 +303,33 @@ export default function CheckoutPage() {
 
   // Form fields - Contact
   const [email, setEmail] = useState("");
+  const [phoneCountry, setPhoneCountry] = useState("GB");
+  const [phone, setPhone] = useState("");
+  const [phoneDropdownOpen, setPhoneDropdownOpen] = useState(false);
+  const phoneRef = useRef(null);
   const [marketingOptIn, setMarketingOptIn] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  // Countdown timer (10 minutes)
+  const [timeLeft, setTimeLeft] = useState(10 * 60);
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const id = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
+    return () => clearInterval(id);
+  }, [timeLeft > 0]);
+
+  // Close phone dropdown on click outside
+  useEffect(() => {
+    if (!phoneDropdownOpen) return;
+    const handleClick = (e) => {
+      if (phoneRef.current && !phoneRef.current.contains(e.target)) {
+        setPhoneDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [phoneDropdownOpen]);
 
   // Form fields - Delivery
   const [country, setCountry] = useState("IT");
@@ -314,48 +389,6 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, [pageId]);
 
-  // Create checkout session when page config is loaded
-  useEffect(() => {
-    if (!pageConfig?.whopPlanId || sessionId) return;
-
-    let cancelled = false;
-    (async () => {
-      try {
-        setSessionLoading(true);
-        const res = await fetch("/api/checkout/create-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            planId: pageConfig.whopPlanId,
-            metadata: {
-              checkoutPageId: pageId,
-            },
-          }),
-        });
-
-        const data = await res.json();
-        if (cancelled) return;
-
-        if (!res.ok || !data.success) {
-          console.error("[Whop] Session creation failed:", data);
-          setError(data.error || "Failed to initialize payment");
-          return;
-        }
-
-        console.log("[Whop] Session created:", data.sessionId);
-        setSessionId(data.sessionId);
-      } catch (e) {
-        if (!cancelled) {
-          console.error("[Whop] Session creation error:", e);
-          setError("Failed to initialize payment");
-        }
-      } finally {
-        if (!cancelled) setSessionLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [pageConfig?.whopPlanId, pageId, sessionId]);
-
   // Update Whop checkout with email/address when they change
   useEffect(() => {
     if (checkoutRef.current && email) {
@@ -366,20 +399,69 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (checkoutRef.current && address) {
       checkoutRef.current.setAddress({
+        name: `${firstName} ${lastName}`.trim() || undefined,
         line1: address,
         line2: apartment || undefined,
         city: city,
         state: province,
-        postal_code: postalCode,
+        postalCode: postalCode,
         country: country,
       });
     }
-  }, [address, apartment, city, province, postalCode, country]);
+  }, [firstName, lastName, address, apartment, city, province, postalCode, country]);
 
   // Handle payment complete
   const handleComplete = (planId, receiptId) => {
     console.log("[Whop] Payment complete:", { planId, receiptId });
+    setSubmitting(false);
     setPaymentSuccess(true);
+  };
+
+  // Validate form fields
+  const validateForm = () => {
+    const errors = {};
+    if (!email.trim()) errors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(email)) errors.email = "Enter a valid email";
+    if (!firstName.trim()) errors.firstName = "First name is required";
+    if (!lastName.trim()) errors.lastName = "Last name is required";
+    if (!address.trim()) errors.address = "Address is required";
+    if (!city.trim()) errors.city = "City is required";
+    if (!postalCode.trim()) errors.postalCode = "Postal code is required";
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Clear field error on change
+  const clearError = (field) => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
+    }
+  };
+
+  // Handle Complete Order button
+  const handleSubmitOrder = async () => {
+    console.log("[DEBUG] Button clicked");
+    console.log("[DEBUG] ref.current:", checkoutRef.current);
+    console.log("[DEBUG] checkoutReady:", checkoutReady);
+    console.log("[DEBUG] submitting:", submitting);
+
+    if (!validateForm()) {
+      console.log("[DEBUG] Form validation failed");
+      return;
+    }
+
+    if (!checkoutRef.current) {
+      console.log("[DEBUG] ref.current is NULL - cannot submit");
+      return;
+    }
+
+    try {
+      console.log("[DEBUG] Calling submit()...");
+      await checkoutRef.current.submit();
+      console.log("[DEBUG] submit() resolved");
+    } catch (e) {
+      console.error("[DEBUG] submit() error:", e.name, e.message);
+    }
   };
 
   // Get return URL for redirects (needed for 3DS and external payment providers)
@@ -440,22 +522,29 @@ export default function CheckoutPage() {
   // Main checkout page
   return (
     <div className="checkout-container">
+      {/* Mobile-only Checkout title above gray summary */}
+      <div className="mobile-checkout-title mobile-only">
+        <span className="checkout-logo">Checkout</span>
+      </div>
+
       {/* Left Column - Form */}
       <main className="checkout-main">
         <div className="checkout-main-inner">
           {/* Logo / Breadcrumbs */}
           <header className="checkout-header">
             <span className="checkout-logo">Checkout</span>
-            <nav className="checkout-breadcrumbs">
-              <a href="#">Cart</a>
-              <span className="separator">&gt;</span>
-              <span className="current">Information</span>
-              <span className="separator">&gt;</span>
-              <span>Shipping</span>
-              <span className="separator">&gt;</span>
-              <span>Payment</span>
-            </nav>
           </header>
+
+          {/* Countdown alert */}
+          <div className="countdown-alert">
+            <svg className="countdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span className="countdown-text">
+              {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")} until your order expires
+            </span>
+          </div>
 
           <div>
             {/* Error message */}
@@ -472,15 +561,57 @@ export default function CheckoutPage() {
               </div>
 
               <div className="form-row">
-                <input
+                <FloatingInput
+                  label={t.email_placeholder}
                   type="email"
-                  className="form-input"
-                  placeholder={t.email_placeholder}
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
                   autoComplete="email"
                   required
+                  error={fieldErrors.email}
                 />
+              </div>
+
+              <div className="form-row">
+                <div className="phone-input-wrapper" ref={phoneRef}>
+                  <button
+                    type="button"
+                    className="phone-country-select"
+                    onClick={() => setPhoneDropdownOpen(!phoneDropdownOpen)}
+                  >
+                    <span className="phone-flag">{PHONE_COUNTRIES.find(c => c.code === phoneCountry)?.flag}</span>
+                    <span className="phone-dial">{PHONE_COUNTRIES.find(c => c.code === phoneCountry)?.dial}</span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="phone-chevron">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  {phoneDropdownOpen && (
+                    <div className="phone-dropdown">
+                      {PHONE_COUNTRIES.map(c => (
+                        <button
+                          type="button"
+                          key={c.code}
+                          className={`phone-dropdown-item ${phoneCountry === c.code ? "active" : ""}`}
+                          onClick={() => { setPhoneCountry(c.code); setPhoneDropdownOpen(false); }}
+                        >
+                          <span className="phone-flag">{c.flag}</span>
+                          <span>{c.dial}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="phone-number-field">
+                    <input
+                      type="tel"
+                      className="form-input phone-input"
+                      placeholder=" "
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      autoComplete="tel-national"
+                    />
+                    <label className="float-label-text">Phone number</label>
+                  </div>
+                </div>
               </div>
 
               <div className="form-row">
@@ -502,64 +633,62 @@ export default function CheckoutPage() {
               <h2 className="section-title" style={{ marginBottom: 16 }}>{t.delivery}</h2>
 
               <div className="form-row">
-                <select
-                  className="form-select"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  autoComplete="country"
-                >
-                  <option value="IT">Italy</option>
-                  <option value="FR">France</option>
-                  <option value="DE">Germany</option>
-                  <option value="ES">Spain</option>
-                  <option value="NL">Netherlands</option>
-                  <option value="AT">Austria</option>
-                  <option value="BE">Belgium</option>
-                  <option value="PT">Portugal</option>
-                  <option value="CH">Switzerland</option>
-                  <option value="GB">United Kingdom</option>
-                </select>
+                <div className="float-label">
+                  <select
+                    className="form-select"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    autoComplete="country"
+                  >
+                    <option value="IT">Italy</option>
+                    <option value="FR">France</option>
+                    <option value="DE">Germany</option>
+                    <option value="ES">Spain</option>
+                    <option value="NL">Netherlands</option>
+                    <option value="AT">Austria</option>
+                    <option value="BE">Belgium</option>
+                    <option value="PT">Portugal</option>
+                    <option value="CH">Switzerland</option>
+                    <option value="GB">United Kingdom</option>
+                  </select>
+                  <label className="float-label-text float-label-text--active">{t.country_placeholder}</label>
+                </div>
               </div>
 
               <div className="form-row form-row-inline">
                 <div className="form-group">
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder={t.first_name_placeholder}
+                  <FloatingInput
+                    label={t.first_name_placeholder}
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) => { setFirstName(e.target.value); clearError("firstName"); }}
                     autoComplete="given-name"
+                    error={fieldErrors.firstName}
                   />
                 </div>
                 <div className="form-group">
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder={t.last_name_placeholder}
+                  <FloatingInput
+                    label={t.last_name_placeholder}
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(e) => { setLastName(e.target.value); clearError("lastName"); }}
                     autoComplete="family-name"
+                    error={fieldErrors.lastName}
                   />
                 </div>
               </div>
 
               <div className="form-row">
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder={t.address_placeholder}
+                <FloatingInput
+                  label={t.address_placeholder}
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => { setAddress(e.target.value); clearError("address"); }}
                   autoComplete="street-address"
+                  error={fieldErrors.address}
                 />
               </div>
 
               <div className="form-row">
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder={t.apt_placeholder}
+                <FloatingInput
+                  label={t.apt_placeholder}
                   value={apartment}
                   onChange={(e) => setApartment(e.target.value)}
                   autoComplete="address-line2"
@@ -568,35 +697,48 @@ export default function CheckoutPage() {
 
               <div className="form-row form-row-three">
                 <div className="form-group">
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder={t.city_placeholder}
+                  <FloatingInput
+                    label={t.city_placeholder}
                     value={city}
-                    onChange={(e) => setCity(e.target.value)}
+                    onChange={(e) => { setCity(e.target.value); clearError("city"); }}
                     autoComplete="address-level2"
+                    error={fieldErrors.city}
                   />
                 </div>
                 <div className="form-group">
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder={t.province_placeholder}
+                  <FloatingInput
+                    label={t.province_placeholder}
                     value={province}
                     onChange={(e) => setProvince(e.target.value)}
                     autoComplete="address-level1"
                   />
                 </div>
                 <div className="form-group">
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder={t.postal_placeholder}
+                  <FloatingInput
+                    label={t.postal_placeholder}
                     value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
+                    onChange={(e) => { setPostalCode(e.target.value); clearError("postalCode"); }}
                     autoComplete="postal-code"
+                    error={fieldErrors.postalCode}
                   />
                 </div>
+              </div>
+            </section>
+
+            <div className="divider" />
+
+            {/* Shipping Method Section */}
+            <section className="checkout-section">
+              <h2 className="section-title" style={{ marginBottom: 16 }}>Shipping method</h2>
+              <div className="shipping-method-card selected">
+                <div className="shipping-method-radio">
+                  <input type="radio" name="shipping-method" checked readOnly />
+                </div>
+                <div className="shipping-method-info">
+                  <span className="shipping-method-title">Royal Mail Tracked</span>
+                  <span className="shipping-method-desc">Delivery 1-3 Days</span>
+                </div>
+                <span className="shipping-method-price">FREE</span>
               </div>
             </section>
 
@@ -607,77 +749,72 @@ export default function CheckoutPage() {
               <h2 className="section-title">{t.payment}</h2>
               <p className="text-muted text-small" style={{ marginBottom: 16 }}>{t.payment_subtitle}</p>
 
-              <div className="payment-methods">
-                {/* Credit Card Method - Always selected */}
-                <div className="payment-method selected">
-                  <input
-                    type="radio"
-                    name="payment-method"
-                    className="payment-method-radio"
-                    checked
-                    readOnly
-                  />
-                  <div className="payment-method-content">
-                    <span className="payment-method-label">{t.credit_card}</span>
-                    <div className="payment-method-icons">
-                      {CardIcons.visa}
-                      {CardIcons.mastercard}
-                      {CardIcons.amex}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Whop Checkout Embed - Payment Only */}
-                <div className="payment-card-fields">
-                  {sessionId ? (
-                    <WhopCheckoutEmbed
-                      ref={checkoutRef}
-                      sessionId={sessionId}
-                      returnUrl={getReturnUrl()}
-                      skipRedirect={true}
-                      hideEmail={true}
-                      hideAddressForm={true}
-                      hidePrice={true}
-                      hideTermsAndConditions={false}
-                      theme="light"
-                      onComplete={handleComplete}
-                      onStateChange={(state) => {
-                        console.log("[Whop] Checkout state:", state);
-                      }}
-                      prefill={{
-                        email: email || undefined,
-                      }}
-                      styles={{
-                        containerPadding: { top: 0, bottom: 0, left: 0, right: 0 }
-                      }}
-                      fallback={
-                        <div style={{ padding: "20px", textAlign: "center", color: "#737373" }}>
-                          Loading payment form...
-                        </div>
-                      }
-                    />
-                  ) : (
+              <div className="whop-embed-container">
+                <WhopCheckoutEmbed
+                  ref={checkoutRef}
+                  planId={pageConfig.whopPlanId}
+                  returnUrl={getReturnUrl()}
+                  hideEmail
+                  hideAddressForm
+                  hidePrice
+                  hideSubmitButton
+                  theme="light"
+                  onComplete={handleComplete}
+                  onStateChange={(state) => {
+                    console.log("[Whop] Checkout state:", state);
+                    if (state === "ready") {
+                      setCheckoutReady(true);
+                      setSubmitting(false);
+                    } else if (state === "disabled") {
+                      setSubmitting(true);
+                    } else if (state === "loading") {
+                      setCheckoutReady(false);
+                    }
+                  }}
+                  prefill={{
+                    email: email || undefined,
+                  }}
+                  styles={{
+                    container: {
+                      paddingLeft: 0,
+                      paddingRight: 0,
+                      paddingTop: 0,
+                      paddingBottom: 0,
+                    },
+                  }}
+                  fallback={
                     <div style={{ padding: "20px", textAlign: "center", color: "#737373" }}>
-                      {sessionLoading ? "Initializing payment..." : "Loading payment form..."}
+                      Loading payment form...
                     </div>
-                  )}
-                </div>
+                  }
+                />
               </div>
             </section>
+
+            {/* Complete Order Button */}
+            <button
+              type="button"
+              className="btn btn-complete-order"
+              disabled={false}
+              onClick={handleSubmitOrder}
+            >
+              <LockIcon />
+              {submitting ? t.processing : "Complete order"}
+            </button>
 
             <p className="secure-notice">
               <LockIcon />
               {t.secure_payment}
             </p>
 
-            {/* Footer Links */}
-            <footer className="checkout-footer">
-              <div className="footer-links">
+            <div className="checkout-bottom-section">
+              <img className="payment-badges" src="https://lassodata.s3.eu-north-1.amazonaws.com/users/6994a4bf984dfe408eb12079/payment-pages/6994a9e9984dfe408eb12397_payment_methods_6984d2e19d9687f9923ba944-payment-methods-upcart-trust-badge-1768853478727-cbdadadd-3fa09df1.png" alt="Payment methods" />
+              <div className="footer-links-grid">
                 <a href="#" className="footer-link">Terms & conditions</a>
                 <a href="#" className="footer-link">Privacy policy</a>
                 <a href="#" className="footer-link">Return/Shipping policy</a>
               </div>
-            </footer>
+            </div>
           </div>
         </div>
       </main>
@@ -701,6 +838,9 @@ export default function CheckoutPage() {
           </div>
 
           <div className={`summary-content ${summaryOpen ? "" : "collapsed"}`}>
+            {/* Order Summary Title */}
+            <h2 className="summary-title">{t.order_summary}</h2>
+
             {/* Product */}
             <div className="summary-product">
               <div className="product-thumbnail">
@@ -715,6 +855,21 @@ export default function CheckoutPage() {
                 <p className="product-variant">Monthly subscription</p>
               </div>
               <span className="product-price">{displayPrice}</span>
+            </div>
+
+            {/* Shipping Protection */}
+            <div className="summary-product">
+              <div className="product-thumbnail">
+                <img
+                  src="https://cdn.shopify.com/s/files/1/0718/8483/3026/files/default_71870f99-405f-4b04-9583-d81a1f91b5e7.png"
+                  alt="Shipping Protection"
+                />
+              </div>
+              <div className="product-details">
+                <p className="product-name">Shipping Protection</p>
+                <p className="product-variant">Against loss, theft & damage</p>
+              </div>
+              <span className="product-price">{t.free}</span>
             </div>
 
             {/* Discount Code */}
@@ -760,9 +915,89 @@ export default function CheckoutPage() {
                 <span className="summary-total-amount">{displayPrice}</span>
               </div>
             </div>
+
+            {/* Trust Badges - desktop only (inside sidebar) */}
+            <div className="desktop-only">
+              <div className="trust-badges">
+                <div className="trust-badge-card">
+                  <div className="trust-badge-icon"><TruckIcon /></div>
+                  <div className="trust-badge-text">
+                    <span className="trust-badge-title">Tracked Delivery Guaranteed</span>
+                    <span className="trust-badge-desc">Delivered to your home with Royal Mail using Tracked Delivery Guaranteed</span>
+                  </div>
+                </div>
+                <div className="trust-badge-card">
+                  <div className="trust-badge-icon"><ShieldIcon /></div>
+                  <div className="trust-badge-text">
+                    <span className="trust-badge-title">30 Days Money Back Guarantee</span>
+                    <span className="trust-badge-desc">Change of mind? Exchange or return easily within the first 30 days</span>
+                  </div>
+                </div>
+              </div>
+              <div className="customer-reviews">
+                <h3 className="reviews-title">Customer Reviews</h3>
+                {REVIEWS.map((review, i) => (
+                  <div className="review-card" key={i}>
+                    <div className="review-stars">
+                      {[...Array(5)].map((_, j) => <StarIcon key={j} />)}
+                    </div>
+                    <h4 className="review-card-title">{review.title}</h4>
+                    <p className="review-card-body">{review.body}</p>
+                    <div className="review-author">
+                      <img className="review-avatar" src={review.avatar} alt={review.name} />
+                      <div className="review-author-info">
+                        <span className="review-author-name">{review.name}</span>
+                        <span className="review-author-time">{review.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </aside>
+
+      {/* Mobile only - Trust badges & Reviews at the bottom */}
+      <section className="checkout-social-proof mobile-only">
+        <div className="checkout-social-proof-inner">
+          <div className="trust-badges">
+            <div className="trust-badge-card">
+              <div className="trust-badge-icon"><TruckIcon /></div>
+              <div className="trust-badge-text">
+                <span className="trust-badge-title">Tracked Delivery Guaranteed</span>
+                <span className="trust-badge-desc">Delivered to your home with Royal Mail using Tracked Delivery Guaranteed</span>
+              </div>
+            </div>
+            <div className="trust-badge-card">
+              <div className="trust-badge-icon"><ShieldIcon /></div>
+              <div className="trust-badge-text">
+                <span className="trust-badge-title">30 Days Money Back Guarantee</span>
+                <span className="trust-badge-desc">Change of mind? Exchange or return easily within the first 30 days</span>
+              </div>
+            </div>
+          </div>
+          <div className="customer-reviews">
+            <h3 className="reviews-title">Customer Reviews</h3>
+            {REVIEWS.map((review, i) => (
+              <div className="review-card" key={i}>
+                <div className="review-stars">
+                  {[...Array(5)].map((_, j) => <StarIcon key={j} />)}
+                </div>
+                <h4 className="review-card-title">{review.title}</h4>
+                <p className="review-card-body">{review.body}</p>
+                <div className="review-author">
+                  <img className="review-avatar" src={review.avatar} alt={review.name} />
+                  <div className="review-author-info">
+                    <span className="review-author-name">{review.name}</span>
+                    <span className="review-author-time">{review.time}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
