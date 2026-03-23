@@ -401,6 +401,19 @@ export default function CheckoutPage() {
     } catch (e) {
       console.warn("[Whop] setEmail:", e.message);
     }
+    try {
+      await checkoutRef.current.setAddress({
+        name: `${firstName} ${lastName}`.trim() || undefined,
+        line1: address || undefined,
+        line2: apartment || undefined,
+        city: city || undefined,
+        state: province || undefined,
+        postalCode: postalCode || undefined,
+        country: country || undefined,
+      });
+    } catch (e) {
+      console.warn("[Whop] setAddress:", e.message);
+    }
     checkoutRef.current.submit();
   };
 
@@ -695,6 +708,7 @@ export default function CheckoutPage() {
                   planId={pageConfig.whopPlanId}
                   returnUrl={getReturnUrl()}
                   hideEmail
+                  hideAddressForm
                   hidePrice
                   hideSubmitButton
                   theme="light"
