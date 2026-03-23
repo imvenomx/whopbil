@@ -394,8 +394,13 @@ export default function CheckoutPage() {
   };
 
   // Handle Complete Order - programmatic submit per Whop docs
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = async () => {
     if (!checkoutRef.current || checkoutState !== "ready") return;
+    try {
+      if (email) await checkoutRef.current.setEmail(email);
+    } catch (e) {
+      console.warn("[Whop] setEmail:", e.message);
+    }
     checkoutRef.current.submit();
   };
 
@@ -689,7 +694,7 @@ export default function CheckoutPage() {
                   ref={checkoutRef}
                   planId={pageConfig.whopPlanId}
                   returnUrl={getReturnUrl()}
-                  disableEmail
+                  hideEmail
                   hidePrice
                   hideSubmitButton
                   theme="light"
