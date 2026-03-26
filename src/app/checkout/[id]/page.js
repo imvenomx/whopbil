@@ -63,6 +63,7 @@ const I18N = {
     review_3_title: "Worth every penny",
     review_3_body: "Fast shipping, great product, and easy to use. Already recommended it to all my friends. Will definitely buy again!",
     review_time: "2 days ago",
+    countdown_text: "until your order expires",
   },
   it: {
     checkout: "Cassa",
@@ -121,6 +122,7 @@ const I18N = {
     review_3_title: "Vale ogni centesimo",
     review_3_body: "Spedizione veloce, ottimo prodotto e facile da usare. L'ho già consigliato a tutti i miei amici!",
     review_time: "2 giorni fa",
+    countdown_text: "fino alla scadenza dell'ordine",
   },
   fr: {
     checkout: "Paiement",
@@ -179,6 +181,7 @@ const I18N = {
     review_3_title: "Chaque centime en vaut la peine",
     review_3_body: "Livraison rapide, excellent produit et facile à utiliser. Je l'ai déjà recommandé à tous mes amis !",
     review_time: "il y a 2 jours",
+    countdown_text: "jusqu'à l'expiration de votre commande",
   },
   de: {
     checkout: "Kasse",
@@ -237,6 +240,7 @@ const I18N = {
     review_3_title: "Jeden Cent wert",
     review_3_body: "Schneller Versand, tolles Produkt und einfach zu bedienen. Habe es bereits allen Freunden empfohlen!",
     review_time: "vor 2 Tagen",
+    countdown_text: "bis Ihre Bestellung abläuft",
   },
 };
 
@@ -458,7 +462,8 @@ export default function CheckoutPage() {
   const [discountCode, setDiscountCode] = useState("");
 
   // Computed values
-  const displayPrice = pageConfig?.price ? `€${pageConfig.price}` : "...";
+  const currencySymbol = pageConfig?.currency === "GBP" ? "£" : "€";
+  const displayPrice = pageConfig?.price ? `${currencySymbol}${pageConfig.price}` : "...";
   const hasShippingAddress = address.trim() !== "";
 
   // Load language (skip IP detection if forced by URL)
@@ -759,7 +764,7 @@ export default function CheckoutPage() {
               <polyline points="12 6 12 12 16 14"/>
             </svg>
             <span className="countdown-text">
-              {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")} until your order expires
+              {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")} {t.countdown_text}
             </span>
           </div>
 

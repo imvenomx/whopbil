@@ -68,6 +68,7 @@ export default function CheckoutPagesPage() {
     price: "",
     productName: "",
     productImage: "",
+    currency: "EUR",
   });
 
   async function loadPages() {
@@ -165,6 +166,7 @@ export default function CheckoutPagesPage() {
       price: page.price || "",
       productName: page.productName || "",
       productImage: page.productImage || "",
+      currency: page.currency || "EUR",
     });
     setShowForm(true);
   }
@@ -180,6 +182,7 @@ export default function CheckoutPagesPage() {
       price: "",
       productName: "",
       productImage: "",
+      currency: "EUR",
     });
   }
 
@@ -348,6 +351,20 @@ export default function CheckoutPagesPage() {
                     </div>
 
                     <div style={styles.formGroup}>
+                      <label style={styles.label}>Currency</label>
+                      <select
+                        value={form.currency}
+                        onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
+                        style={styles.select}
+                      >
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={styles.formGrid}>
+                    <div style={styles.formGroup}>
                       <label style={styles.label}>Product Name</label>
                       <input
                         type="text"
@@ -410,7 +427,7 @@ export default function CheckoutPagesPage() {
                       <h3 style={styles.pageName}>{page.name}</h3>
                       <div style={styles.pageMeta}>
                         {page.price && (
-                          <span style={styles.pagePrice}>€{page.price}</span>
+                          <span style={styles.pagePrice}>{page.currency === "GBP" ? "£" : "€"}{page.price}</span>
                         )}
                         {page.whopPlanId && (
                           <span style={styles.pagePlanId}>

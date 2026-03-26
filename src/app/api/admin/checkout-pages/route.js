@@ -57,6 +57,7 @@ export async function POST(request) {
       price: body.price || "",
       productName: body.productName || "",
       productImage: body.productImage || "",
+      currency: body.currency || "EUR",
     });
 
     return NextResponse.json({ ok: true, page });
@@ -95,6 +96,7 @@ export async function PUT(request) {
       price: body.price || "",
       productName: body.productName || "",
       productImage: body.productImage || "",
+      currency: body.currency || "EUR",
     });
 
     return NextResponse.json({ ok: true, page });
