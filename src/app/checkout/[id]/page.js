@@ -64,6 +64,19 @@ const I18N = {
     review_3_body: "Fast shipping, great product, and easy to use. Already recommended it to all my friends. Will definitely buy again!",
     review_time: "2 days ago",
     countdown_text: "until your order expires",
+    thankyou_header: "Thank you",
+    order_confirmed: "Order confirmed",
+    thankyou_title: "Thank you for your purchase!",
+    confirmation_email: "A confirmation email has been sent to",
+    order_details: "Order details",
+    product_label: "Product",
+    amount_paid: "Amount paid",
+    email_label: "Email",
+    payment_method_label: "Payment method",
+    credit_card_label: "Credit card",
+    delivery_address: "Delivery address",
+    hide_order_summary: "Hide order summary",
+    show_order_summary: "Show order summary",
   },
   it: {
     checkout: "Cassa",
@@ -123,6 +136,19 @@ const I18N = {
     review_3_body: "Spedizione veloce, ottimo prodotto e facile da usare. L'ho già consigliato a tutti i miei amici!",
     review_time: "2 giorni fa",
     countdown_text: "fino alla scadenza dell'ordine",
+    thankyou_header: "Grazie",
+    order_confirmed: "Ordine confermato",
+    thankyou_title: "Grazie per il tuo acquisto!",
+    confirmation_email: "Un'email di conferma è stata inviata a",
+    order_details: "Dettagli ordine",
+    product_label: "Prodotto",
+    amount_paid: "Importo pagato",
+    email_label: "E-mail",
+    payment_method_label: "Metodo di pagamento",
+    credit_card_label: "Carta di credito",
+    delivery_address: "Indirizzo di consegna",
+    hide_order_summary: "Nascondi riepilogo ordine",
+    show_order_summary: "Mostra riepilogo ordine",
   },
   fr: {
     checkout: "Paiement",
@@ -182,6 +208,19 @@ const I18N = {
     review_3_body: "Livraison rapide, excellent produit et facile à utiliser. Je l'ai déjà recommandé à tous mes amis !",
     review_time: "il y a 2 jours",
     countdown_text: "jusqu'à l'expiration de votre commande",
+    thankyou_header: "Merci",
+    order_confirmed: "Commande confirmée",
+    thankyou_title: "Merci pour votre achat !",
+    confirmation_email: "Un e-mail de confirmation a été envoyé à",
+    order_details: "Détails de la commande",
+    product_label: "Produit",
+    amount_paid: "Montant payé",
+    email_label: "E-mail",
+    payment_method_label: "Mode de paiement",
+    credit_card_label: "Carte de crédit",
+    delivery_address: "Adresse de livraison",
+    hide_order_summary: "Masquer le récapitulatif",
+    show_order_summary: "Afficher le récapitulatif",
   },
   de: {
     checkout: "Kasse",
@@ -241,6 +280,19 @@ const I18N = {
     review_3_body: "Schneller Versand, tolles Produkt und einfach zu bedienen. Habe es bereits allen Freunden empfohlen!",
     review_time: "vor 2 Tagen",
     countdown_text: "bis Ihre Bestellung abläuft",
+    thankyou_header: "Vielen Dank",
+    order_confirmed: "Bestellung bestätigt",
+    thankyou_title: "Vielen Dank für Ihren Einkauf!",
+    confirmation_email: "Eine Bestätigungs-E-Mail wurde gesendet an",
+    order_details: "Bestelldetails",
+    product_label: "Produkt",
+    amount_paid: "Bezahlter Betrag",
+    email_label: "E-Mail",
+    payment_method_label: "Zahlungsmethode",
+    credit_card_label: "Kreditkarte",
+    delivery_address: "Lieferadresse",
+    hide_order_summary: "Bestellübersicht ausblenden",
+    show_order_summary: "Bestellübersicht anzeigen",
   },
 };
 
@@ -540,7 +592,8 @@ export default function CheckoutPage() {
       if (data.success && data.order) {
         setOrderData(data.order);
         // Update URL so refresh works
-        window.history.replaceState(null, "", `/checkout/${pageId}?status=success&order=${data.order.id}`);
+        const basePath = isGerman ? `/de/checkout/${pageId}` : `/checkout/${pageId}`;
+        window.history.replaceState(null, "", `${basePath}?status=success&order=${data.order.id}`);
       }
     } catch (e) {
       console.warn("[Whop] Failed to save order:", e);
@@ -571,10 +624,11 @@ export default function CheckoutPage() {
 
   // Get return URL for redirects (needed for 3DS and external payment providers)
   const getReturnUrl = () => {
+    const basePath = isGerman ? `/de/checkout/${pageId}` : `/checkout/${pageId}`;
     if (typeof window !== "undefined") {
-      return `${window.location.origin}/checkout/${pageId}?status=success`;
+      return `${window.location.origin}${basePath}?status=success`;
     }
-    return `/checkout/${pageId}?status=success`;
+    return `${basePath}?status=success`;
   };
 
   // Not Found page
@@ -602,14 +656,20 @@ export default function CheckoutPage() {
     const oPhone = o.phone || (phone ? `${PHONE_COUNTRIES.find(c => c.code === phoneCountry)?.dial || ""} ${phone}`.trim() : "");
     const oProductName = o.productName || pageConfig?.productName || "Product";
     const oPrice = o.price || pageConfig?.price;
-    const oDisplayPrice = oPrice ? `€${oPrice}` : displayPrice;
-    const countryNames = { IT: "Italy", FR: "France", DE: "Germany", ES: "Spain", NL: "Netherlands", AT: "Austria", BE: "Belgium", PT: "Portugal", CH: "Switzerland", GB: "United Kingdom" };
+    const oDisplayPrice = oPrice ? `${currencySymbol}${oPrice}` : displayPrice;
+    const countryNamesMap = {
+      en: { IT: "Italy", FR: "France", DE: "Germany", ES: "Spain", NL: "Netherlands", AT: "Austria", BE: "Belgium", PT: "Portugal", CH: "Switzerland", GB: "United Kingdom" },
+      de: { IT: "Italien", FR: "Frankreich", DE: "Deutschland", ES: "Spanien", NL: "Niederlande", AT: "Österreich", BE: "Belgien", PT: "Portugal", CH: "Schweiz", GB: "Vereinigtes Königreich" },
+      fr: { IT: "Italie", FR: "France", DE: "Allemagne", ES: "Espagne", NL: "Pays-Bas", AT: "Autriche", BE: "Belgique", PT: "Portugal", CH: "Suisse", GB: "Royaume-Uni" },
+      it: { IT: "Italia", FR: "Francia", DE: "Germania", ES: "Spagna", NL: "Paesi Bassi", AT: "Austria", BE: "Belgio", PT: "Portogallo", CH: "Svizzera", GB: "Regno Unito" },
+    };
+    const countryNames = countryNamesMap[lang] || countryNamesMap.en;
     return (
       <div className="checkout-container">
         <main className="checkout-main">
           <div className="checkout-main-inner">
             <header className="checkout-header">
-              <span className="checkout-logo">Thank you</span>
+              <span className="checkout-logo">{t.thankyou_header}</span>
             </header>
 
             <div className="thankyou-confirmation">
@@ -617,36 +677,36 @@ export default function CheckoutPage() {
                 <CheckIcon />
               </div>
               <div className="thankyou-confirmation-text">
-                <p className="thankyou-subtitle">Order confirmed</p>
-                <h1 className="thankyou-title">Thank you for your purchase!</h1>
-                <p className="thankyou-desc">A confirmation email has been sent to <strong>{oEmail}</strong></p>
+                <p className="thankyou-subtitle">{t.order_confirmed}</p>
+                <h1 className="thankyou-title">{t.thankyou_title}</h1>
+                <p className="thankyou-desc">{t.confirmation_email} <strong>{oEmail}</strong></p>
               </div>
             </div>
 
             <div className="thankyou-section">
-              <h3 className="thankyou-section-title">Order details</h3>
+              <h3 className="thankyou-section-title">{t.order_details}</h3>
               <div className="thankyou-details-grid">
                 <div className="thankyou-detail">
-                  <span className="thankyou-detail-label">Product</span>
+                  <span className="thankyou-detail-label">{t.product_label}</span>
                   <span className="thankyou-detail-value">{oProductName}</span>
                 </div>
                 <div className="thankyou-detail">
-                  <span className="thankyou-detail-label">Amount paid</span>
+                  <span className="thankyou-detail-label">{t.amount_paid}</span>
                   <span className="thankyou-detail-value">{oDisplayPrice}</span>
                 </div>
                 <div className="thankyou-detail">
-                  <span className="thankyou-detail-label">Email</span>
+                  <span className="thankyou-detail-label">{t.email_label}</span>
                   <span className="thankyou-detail-value">{oEmail}</span>
                 </div>
                 <div className="thankyou-detail">
-                  <span className="thankyou-detail-label">Payment method</span>
-                  <span className="thankyou-detail-value">Credit card</span>
+                  <span className="thankyou-detail-label">{t.payment_method_label}</span>
+                  <span className="thankyou-detail-value">{t.credit_card_label}</span>
                 </div>
               </div>
             </div>
 
             <div className="thankyou-section">
-              <h3 className="thankyou-section-title">Delivery address</h3>
+              <h3 className="thankyou-section-title">{t.delivery_address}</h3>
               <div className="thankyou-address">
                 <p>{oFirstName} {oLastName}</p>
                 <p>{oAddress}{oApartment ? `, ${oApartment}` : ""}</p>
@@ -668,38 +728,38 @@ export default function CheckoutPage() {
             <div className="summary-toggle" onClick={() => setSummaryOpen(!summaryOpen)}>
               <div className="summary-toggle-left">
                 <CartIcon />
-                <span className="summary-toggle-text">{summaryOpen ? "Hide order summary" : "Show order summary"}</span>
+                <span className="summary-toggle-text">{summaryOpen ? t.hide_order_summary : t.show_order_summary}</span>
                 <ChevronIcon down={summaryOpen} />
               </div>
-              <span className="summary-toggle-price">{displayPrice}</span>
+              <span className="summary-toggle-price">{oDisplayPrice}</span>
             </div>
             <div className={`summary-content ${summaryOpen ? "" : "collapsed"}`}>
               <h2 className="summary-title">{t.order_summary}</h2>
               <div className="summary-product">
                 <div className="product-thumbnail">
-                  <img src={pageConfig?.productImage || "https://cdn-icons-png.flaticon.com/512/8832/8832119.png"} alt={pageConfig?.productName || "Product"} />
+                  <img src={pageConfig?.productImage || "https://cdn-icons-png.flaticon.com/512/8832/8832119.png"} alt={oProductName} />
                   <span className="product-quantity-badge">1</span>
                 </div>
                 <div className="product-details">
-                  <p className="product-name">{pageConfig?.productName || "Product"}</p>
+                  <p className="product-name">{oProductName}</p>
                   <p className="product-variant">{t.product_qty}</p>
                 </div>
-                <span className="product-price">{displayPrice}</span>
+                <span className="product-price">{oDisplayPrice}</span>
               </div>
               <div className="summary-product">
                 <div className="product-thumbnail">
-                  <img src="https://cdn.shopify.com/s/files/1/0718/8483/3026/files/default_71870f99-405f-4b04-9583-d81a1f91b5e7.png" alt="Shipping Protection" />
+                  <img src="https://cdn.shopify.com/s/files/1/0718/8483/3026/files/default_71870f99-405f-4b04-9583-d81a1f91b5e7.png" alt={t.shipping_protection} />
                 </div>
                 <div className="product-details">
-                  <p className="product-name">Shipping Protection</p>
-                  <p className="product-variant">Against loss, theft & damage</p>
+                  <p className="product-name">{t.shipping_protection}</p>
+                  <p className="product-variant">{t.shipping_protection_desc}</p>
                 </div>
                 <span className="product-price">{t.free}</span>
               </div>
               <div className="summary-totals">
                 <div className="summary-line">
                   <span className="summary-line-label">{t.subtotal}</span>
-                  <span className="summary-line-value">{displayPrice}</span>
+                  <span className="summary-line-value">{oDisplayPrice}</span>
                 </div>
                 <div className="summary-line">
                   <span className="summary-line-label">{t.shipping}</span>
@@ -709,8 +769,8 @@ export default function CheckoutPage() {
               <div className="summary-total">
                 <span className="summary-total-label">{t.total}</span>
                 <div className="summary-total-value">
-                  <span className="summary-total-currency">EUR</span>
-                  <span className="summary-total-amount">{displayPrice}</span>
+                  <span className="summary-total-currency">{pageConfig?.currency || "EUR"}</span>
+                  <span className="summary-total-amount">{oDisplayPrice}</span>
                 </div>
               </div>
             </div>
